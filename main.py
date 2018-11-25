@@ -2,9 +2,8 @@ import itertools
 import time
 
 #DL = DescriptionLength
-def DLTraj(trajectory, PathletDic) :
+def DLTraj(trajectory, PathletDic,MinResult) :
     MinNewTraj = [0] * 1000000
-    OnesOfMin = len(MinNewTraj)
 
     #Pithanes kathgories gia to trajectory se sxesh me to PathletDic
     NewTrajs = list(itertools.product([0, 1], repeat=len(PathletDic)))
@@ -18,33 +17,38 @@ def DLTraj(trajectory, PathletDic) :
             if i == 1 :
                 PathletIndexesToCheck.append(index)
             index += 1
-            
-        if OnesOfMin < len(PathletIndexesToCheck) :
+        
+        #An exoume vrei me ligotera tote dn xreiazetai na to psaksoume kai pame sto epomeno
+        if MinResult < len(PathletIndexesToCheck) :
             continue
         
         for i in range(0,len(PathletIndexesToCheck)) :
+            #pairnoume ola ta combinations gia na vroume an sumplhrwnete to trajectory
             CertainIndexes = list(itertools.combinations(PathletIndexesToCheck, i + 1))
        
             for indexes in CertainIndexes :
                 CheckPathlet = []
 
+                #Ftiaxnw gia na dw an dhmiourgite to idio Path me to trajectory
                 for index in indexes :
                     CheckPathlet = CheckPathlet + PathletDic[index]
                 
-
+                #Elegxos omoiothtas me to trajectory
                 if len(CheckPathlet) != len(trajectory) :
                     continue
                 else :
                     if trajectory == CheckPathlet :
                         
-                        if OnesOfMin > len(PathletIndexesToCheck) :
+                        if MinResult > i + 1 :
                             
                             MinNewTraj = NewTraj
-                            OnesOfMin = len(PathletIndexesToCheck)
+                            MinResult = i + 1
 
+    #Epistrefw to allagmeno Trajectory me 0/1 gia kathe Pathlet tou dictionary
+    #kai ton arithmo twn 1
+    return MinNewTraj,MinResult
 
-    return MinNewTraj,OnesOfMin
-
+#Epistrefei to DL tou Pathdic
 def DLPathlDic(PathletDic) :
     dl = 0
     for pathlet in PathletDic :
@@ -52,7 +56,8 @@ def DLPathlDic(PathletDic) :
     return dl
 
 
-def MakePathletDirAndNewTrajs(trajectories) :
+#Vasikh sunarthsh Vriskw PathletDic kai NewTrajectories
+def MakePathletDicAndNewTrajs(trajectories) :
     PathletDic = []
 
     for trajectory in trajectories :
@@ -66,19 +71,25 @@ def MakePathletDirAndNewTrajs(trajectories) :
                     
     NewTrajectories = []
     MinPathletDic = []
-    MinResult = 100000000000
+    MinResult = 1000000
 
     for i in range(0,len(PathletDic)) :
+        #Pairnw ola ta Combinations gia to PathletDic sumfwna me to oliko
         CertainPathletDics = list(itertools.combinations(PathletDic, i + 1))
         for PathletD in CertainPathletDics :
             NewTrajs = []
+            #Sumfwna me ton algorithmo to DL tou PathletDic
             Result = DLPathlDic(PathletD)
+            #An exoume hdh kalutero apotelesma psaxnoume to epomeno PathletDic
             if (Result > MinResult) :
                 continue
+            #Parakatw trexoume to DLtraj gia kathe trajectory
             for j in range(len(trajectories)) :
-                NewTraj,res = DLTraj(trajectories[j],PathletD)
+                NewTraj,res = DLTraj(trajectories[j],PathletD,MinResult)
                 NewTrajs.append(NewTraj)
+                #Prosthetoume to apotelesma sumfwna me ton tupo
                 Result += res
+                #An opoiadhpote stigmh exoume kalutero result pame sto epomeno
                 if (Result > MinResult) :
                     break
 
@@ -87,6 +98,7 @@ def MakePathletDirAndNewTrajs(trajectories) :
                 MinPathletDic = PathletD
                 MinResult = Result
 
+    #Epistrefw ta kalutera Newtrajectories kai To PathletDic
     return NewTrajectories,MinPathletDic
 
 #---------------------------------------------------------------------------
@@ -103,7 +115,7 @@ trajectories.append([(0,0),(1,1),(1,2),(3,2)])
 trajectories.append([(0,0),(1,1),(1,3)])
 trajectories.append([(1,2),(3,2),(3,3)])
 
-NewTrajectories,MinPathletDic = MakePathletDirAndNewTrajs(trajectories)
+NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
 
 print(NewTrajectories)
 print(MinPathletDic)
