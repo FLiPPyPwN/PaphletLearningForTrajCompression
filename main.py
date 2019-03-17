@@ -104,6 +104,29 @@ def MakePathletDicAndNewTrajs(trajectories) :
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
+
+def FindAllPossiblePathlets(trajectories) :
+    AllPossiblePathlets = []
+    AllPossiblePathlets.append([()])
+
+    for traj in trajectories :
+        for PathletLength in range(1,len(traj) + 1) :
+            for i in range(0,len(traj)) :
+
+                temp = []
+                temp.append(traj[i])
+                for j in range(i + 1, i + PathletLength) :
+                    if (j < len(traj)) :
+                        temp.append(traj[j])
+                
+                if (len(temp) == PathletLength and temp not in AllPossiblePathlets) :
+                    AllPossiblePathlets.append(temp)
+
+    return AllPossiblePathlets
+
+
+
+
 #---------------------------------------------------------------------------
 
 start = time.time()
@@ -115,10 +138,16 @@ trajectories.append([(0,0),(1,1),(1,2),(3,2)])
 trajectories.append([(0,0),(1,1),(1,3)])
 trajectories.append([(1,2),(3,2),(3,3)])
 
-NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
+AllPossiblePathlets = FindAllPossiblePathlets(trajectories)
+print(AllPossiblePathlets)
 
+
+
+"""
+NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
 print(NewTrajectories)
 print(MinPathletDic)
+"""
 
 end = time.time()
 print(end - start)
