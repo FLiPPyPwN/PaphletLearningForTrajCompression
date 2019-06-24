@@ -1,5 +1,7 @@
 import itertools
 import time
+import numpy as np
+from pulp import *
 
 #DL = DescriptionLength
 def DLTraj(trajectory, PathletDic,MinResult) :
@@ -107,7 +109,6 @@ def MakePathletDicAndNewTrajs(trajectories) :
 
 def FindAllPossiblePathlets(trajectories) :
     AllPossiblePathlets = []
-    AllPossiblePathlets.append([()])
 
     for traj in trajectories :
         for PathletLength in range(1,len(traj) + 1) :
@@ -138,9 +139,45 @@ trajectories.append([(0,0),(1,1),(1,2),(3,2)])
 trajectories.append([(0,0),(1,1),(1,3)])
 trajectories.append([(1,2),(3,2),(3,3)])
 
-AllPossiblePathlets = FindAllPossiblePathlets(trajectories)
-print(AllPossiblePathlets)
+FindAllPossiblePathlets = FindAllPossiblePathlets(trajectories)
 
+"""
+P_ = [0 for x in range(len(FindAllPossiblePathlets))]
+print(P_)
+
+Pt = [[0 for x in range(len(P_))] for y in range(len(trajectories))] 
+
+print(Pt)
+"""
+#npAPP = np.array(FindAllPossiblePathlets)
+#print(npAPP)
+
+problem = LpProblem("problemName", LpMinimize)
+
+Xp = LpVariable.dicts("Xp", list(range(len(FindAllPossiblePathlets))), cat="Binary")
+
+Xtp = []
+for i in range(len(trajectories)) :
+    Xtp.append(LpVariable.dicts("Xtp"+str(i), list(range(len(FindAllPossiblePathlets))), cat="Binary"))
+    
+    #constraint
+    for j in range(len(Xtp[i])) :
+        problem += Xtp[i][j] <= Xp[j]
+
+#-------------------
+#objective function
+temp = 0
+for i in range(len(Xp)) :
+    temp += Xp[i]
+
+l = 1; #lamda
+for i in range(len(Xtp)) :
+    for j in range(len(Xtp[i])) :
+        temp += Xtp[i][j]
+
+problem += l*temp
+
+print(problem)
 
 
 """
@@ -150,4 +187,4 @@ print(MinPathletDic)
 """
 
 end = time.time()
-print(end - start)
+print("\nRunTime:",(end - start))
