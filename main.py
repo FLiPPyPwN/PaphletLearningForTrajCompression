@@ -103,9 +103,13 @@ def MakePathletDicAndNewTrajs(trajectories) :
     #Epistrefw ta kalutera Newtrajectories kai To PathletDic
     return NewTrajectories,MinPathletDic
 
+
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+#PARAKATW LINEAR PROGRAMMING
 
 def FindAllPossiblePathlets(trajectories) :
     AllPossiblePathlets = []
@@ -126,6 +130,21 @@ def FindAllPossiblePathlets(trajectories) :
     return AllPossiblePathlets
 
 
+def ExistsIndexesInPathlets(AllPossiblePathlets,traj,e) :
+    indexes = []
+    for i in range(len(AllPossiblePathlets)) :
+        flag = False
+        for j in AllPossiblePathlets[i] :
+            if j not in traj :
+                flag = True
+                break
+
+        if flag :
+            continue
+        if e in AllPossiblePathlets[i] :
+            indexes.append(i)
+
+    return indexes
 
 
 #---------------------------------------------------------------------------
@@ -136,33 +155,38 @@ start = time.time()
 trajectories=[]
 
 trajectories.append([(0,0),(1,1),(1,2),(3,2)])
-trajectories.append([(0,0),(1,1),(1,3)])
-trajectories.append([(1,2),(3,2),(3,3)])
+trajectories.append([(0,0),(1,1),(1,2),(4,4)])
+trajectories.append([(0,0),(1,1),(1,2)])
+trajectories.append([(3,2)])
 
-FindAllPossiblePathlets = FindAllPossiblePathlets(trajectories)
-
-"""
-P_ = [0 for x in range(len(FindAllPossiblePathlets))]
-print(P_)
-
-Pt = [[0 for x in range(len(P_))] for y in range(len(trajectories))] 
-
-print(Pt)
-"""
-#npAPP = np.array(FindAllPossiblePathlets)
-#print(npAPP)
+AllPossiblePathlets = FindAllPossiblePathlets(trajectories)
 
 problem = LpProblem("problemName", LpMinimize)
 
-Xp = LpVariable.dicts("Xp", list(range(len(FindAllPossiblePathlets))), cat="Binary")
+Xp = LpVariable.dicts("Xp", list(range(len(AllPossiblePathlets))), cat="Binary")
 
 Xtp = []
 for i in range(len(trajectories)) :
-    Xtp.append(LpVariable.dicts("Xtp"+str(i), list(range(len(FindAllPossiblePathlets))), cat="Binary"))
+    Xtp.append(LpVariable.dicts("Xtp"+str(i), list(range(len(AllPossiblePathlets))), cat="Binary"))
     
     #constraint
     for j in range(len(Xtp[i])) :
         problem += Xtp[i][j] <= Xp[j]
+
+print(AllPossiblePathlets)
+for i in range(len(trajectories)) :
+
+    for j in trajectories[i] :
+        indexes = []
+        indexes = ExistsIndexesInPathlets(AllPossiblePathlets,trajectories[i],j)
+
+        temp = 0
+        for k in indexes :
+            temp += Xtp[i][k]
+
+        problem += temp == 1
+
+    
 
 #-------------------
 #objective function
@@ -173,12 +197,26 @@ for i in range(len(Xp)) :
 l = 1; #lamda
 for i in range(len(Xtp)) :
     for j in range(len(Xtp[i])) :
-        temp += Xtp[i][j]
+        temp += l*Xtp[i][j]
 
-problem += l*temp
+problem += temp
 
-print(problem)
+#print(problem)
 
+problem.solve()
+
+PathletResults = []
+for i in range(len(AllPossiblePathlets)) :
+    PathletResults.append(Xp[i].varValue)
+print(PathletResults)
+
+TrajsResults = []
+for i in range(len(trajectories)) :
+    trajResult = []
+    for j in range(len(AllPossiblePathlets)) :
+        trajResult.append(Xtp[i][j].varValue)
+    TrajsResults.append(trajResult)
+print(TrajsResults)
 
 """
 NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
@@ -188,3 +226,4 @@ print(MinPathletDic)
 
 end = time.time()
 print("\nRunTime:",(end - start))
+
