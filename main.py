@@ -218,6 +218,44 @@ for i in range(len(trajectories)) :
     TrajsResults.append(trajResult)
 print(TrajsResults)
 
+
+#----------------------------------------------
+#Parakatw meiwnw to megethos twn dedomenwn mas
+indexes = []
+for i in range(len(PathletResults)) :
+    if PathletResults[i] == 0 :
+        indexes.append(i)
+
+print("\nIndexes to Remove: ",indexes)
+
+k = 0
+for i in indexes :
+    del AllPossiblePathlets[i - k]
+    del PathletResults[i - k]
+    for traj in TrajsResults :
+        del traj[i - k]
+    k = k + 1
+
+NewTrajsResults = []
+for traj in TrajsResults :
+    NewTraj = []
+    counter = 1
+    currentValue = traj[0]
+    for i in traj[1:] :
+        if currentValue == i :
+            counter = counter + 1
+        else :
+            NewTraj.append((int(currentValue),counter))
+            counter = 1
+            currentValue = i
+    NewTraj.append((int(currentValue),counter))
+    NewTrajsResults.append(NewTraj)
+
+print(AllPossiblePathlets)
+print(PathletResults)
+print(TrajsResults)
+print(NewTrajsResults)
+
 """
 NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
 print(NewTrajectories)
