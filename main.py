@@ -146,6 +146,39 @@ def ExistsIndexesInPathlets(AllPossiblePathlets,traj,e) :
 
     return indexes
 
+def ReturnPartRealTraj(subtraj1,subtraj2) :
+    if subtraj1 == [] :
+        return subtraj2
+    (x,y) = subtraj1[-1]
+    dist1 = (x**2 + y**2)**(0.5)
+
+    (x,y) = subtraj2[0]
+    dist2 = (x**2 + y**2)**(0.5)
+
+    if dist1 < dist2 :
+        return subtraj1 + subtraj2
+    else :
+        return subtraj2 + subtraj1
+
+def ReturnRealTraj(PathletDic,TrajResult) :
+    RealTraj = []
+    TotalTimes = 0
+    for i in range(len(TrajResult)) :
+        (Value,times) = TrajResult[i]
+        if Value == 1 :
+            for j in range(times) :
+                RealTraj = ReturnPartRealTraj(RealTraj,PathletDic[TotalTimes + j])
+
+        TotalTimes = TotalTimes + times
+
+    return RealTraj
+
+def ReturnAllTrajsInAList(PathletDic,TrajResults) :
+    RealTrajs = []
+    for i in range(len(TrajResults)) :
+        RealTrajs.append(ReturnRealTraj(PathletDic,TrajResults[i]))
+
+    return RealTrajs
 
 #---------------------------------------------------------------------------
 
@@ -154,10 +187,10 @@ start = time.time()
 #Thewroume oti Grid 4x4
 trajectories=[]
 
-trajectories.append([(0,0),(1,1),(1,2),(3,2)])
-trajectories.append([(0,0),(1,1),(1,2),(4,4)])
+trajectories.append([(0,0),(1,1),(1,2),(2,2)])
+trajectories.append([(0,0),(1,1),(1,2),(0,2)])
 trajectories.append([(0,0),(1,1),(1,2)])
-trajectories.append([(3,2)])
+trajectories.append([(2,2)])
 
 AllPossiblePathlets = FindAllPossiblePathlets(trajectories)
 
@@ -236,6 +269,7 @@ for i in indexes :
         del traj[i - k]
     k = k + 1
 
+
 NewTrajsResults = []
 for traj in TrajsResults :
     NewTraj = []
@@ -251,10 +285,15 @@ for traj in TrajsResults :
     NewTraj.append((int(currentValue),counter))
     NewTrajsResults.append(NewTraj)
 
+
 print(AllPossiblePathlets)
 print(PathletResults)
-print(TrajsResults)
 print(NewTrajsResults)
+
+trajstemp = ReturnAllTrajsInAList(AllPossiblePathlets,NewTrajsResults)
+print(trajstemp)
+
+
 
 """
 NewTrajectories,MinPathletDic = MakePathletDicAndNewTrajs(trajectories)
