@@ -1,26 +1,35 @@
 from pulp import *
-class PathletLearningClass :
+class PathletLearningScalableClass :
     def __init__(self, trajectories) :
         self.NumOfTrajs = len(trajectories)
 
-        self.Pathlets, IndexesForConstraints= self.FindAllPossiblePathlets(trajectories)
-        print(len(self.Pathlets))
+        self.Pathlets,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning= self.FindAllPossiblePathlets(trajectories)
+        print(self.Pathlets,"\n")
+        print(TpIndexesNeededForPathletLearning,"\n")
+        print(SubIndexesNeededForPathletLearning)
 
-        PathletResults,self.TrajsResults = self.SolvePathletLearningLinearly(trajectories, IndexesForConstraints)
-        print(IndexesForConstraints)
-        self.MinimizePathletLearningResults(PathletResults)
+        self.Xp = [0]*len(self.Pathlets)
+        self.TrajsResults = list()
+        for i in range(len(trajectories)) :
+            self.TrajsResults.append(self.SolvePathletLearningScalableLinearly(i,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning))
 
-        #print("\nAAA\n",self.Pathlets,self.TrajsResults)
-        
+        print(self.Xp)
+        self.MinimizePathletLearningResults(self.Xp)
+
+        print(self.Pathlets)
+        print(self.TrajsResults)
+
 
     def FindAllPossiblePathlets(self, trajectories) :
         print("STARTFINDPOSSIBLEPATHLETS")
         AllPossiblePathlets = []
-        TrajsIndexesNeededForPathletLearning = []
+        TpIndexesNeededForPathletLearning = []
+        SubIndexesNeededForPathletLearning = []
 
         seenSet = set()
         seen = dict()
 
+        trajCounter = 0
         for traj in trajectories :
             trajIndexTemp = []
             for i in range(len(traj)) :
@@ -36,103 +45,68 @@ class PathletLearningClass :
                         for k in range(i,j) :
                             trajIndexTemp[k].append(len(AllPossiblePathlets))
 
+                        TpIndexesNeededForPathletLearning.append([trajCounter])
                         seen[sub] = len(AllPossiblePathlets)
                         AllPossiblePathlets.append(sub)
                         seenSet.add(sub)
                     else :
-                        print("FINDINDEX")
                         index = seen[sub]
-                        print("FOUNDINDEX")
+                        TpIndexesNeededForPathletLearning[index].append(trajCounter)
+
                         for k in range(i,j) :
                             trajIndexTemp[k].append(index)
 
-            #print(trajIndexTemp)
-            TrajsIndexesNeededForPathletLearning.append(trajIndexTemp)
-            print("FINISHED A TRAJECTORY")
-     
+            trajCounter = trajCounter + 1
+            SubIndexesNeededForPathletLearning.append(trajIndexTemp)
+
         print("FoundAllPossiblePathlets")
-        return AllPossiblePathlets, TrajsIndexesNeededForPathletLearning
+        return AllPossiblePathlets, TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning
+                
 
-
-    def ExistsIndexesInPathlets(self,traj,e) :
-        indexes = []
-        for i in range(len(self.Pathlets)) :
-            flag = False
-            for j in self.Pathlets[i] :
-                if j not in traj :
-                    flag = True
-                    break
-
-            if flag :
-                continue
-            if e in self.Pathlets[i] :
-                indexes.append(i)
-        return indexes
-
-    def SolvePathletLearningLinearly(self,trajectories,IndexesForConstraints) :
+    def SolvePathletLearningScalableLinearly(self,trajIndex,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning) :
         problem = LpProblem("PathletLearning", LpMinimize)
 
-        Xp = LpVariable.dicts("Xp", list(range(len(self.Pathlets))), cat="Binary")
-
-        Xtp = []
         #-------------------
         #Constraints
-        print("Adding Constraints\n1st Set Of Constraints")
-        for i in range(len(trajectories)) :
-            Xtp.append(LpVariable.dicts("Xtp"+str(i), list(range(len(self.Pathlets))), cat="Binary"))
+        print("Adding Set Of Constraints")
+        Xtp = LpVariable.dicts("Xtp"+str(trajIndex), list(range(len(self.Pathlets))), cat="Binary")
+
+        PathletsUsing = set()
+        for indexes in SubIndexesNeededForPathletLearning[trajIndex] :
+            temp = 0
+            for index in indexes :
+                PathletsUsing.add(index)
+                temp += Xtp[index]
             
-            for j in range(len(Xtp[i])) :
-                problem += Xtp[i][j] <= Xp[j]
+            problem += temp == 1
 
-            print(i)
-
-        print("2nd Set Of Constraints")
-
-        #print(IndexesForConstraints)
-        for i in range(len(trajectories)) :
-
-            for j in range(len(trajectories[i])) :
-                #indexes = []
-                #indexes = self.ExistsIndexesInPathlets(trajectories[i],j)
-                #print(len(indexes))
-                temp = 0
-                for k in IndexesForConstraints[i][j] :
-                    temp += Xtp[i][k]
-
-                problem += temp == 1
-
-            print(i)
-        #-------------------
-        #objective function
         print("Adding Objective Function")
         temp = 0
-        for i in range(len(Xp)) :
-            temp += Xp[i]
-
-        l = 100; #lamda
-        for i in range(len(Xtp)) :
-            for j in range(len(Xtp[i])) :
-                temp += l*Xtp[i][j]
+        l = 1
+        for i in PathletsUsing :
+            AbsoluteTp = len(TpIndexesNeededForPathletLearning[i])
+            temp += (l + 1/AbsoluteTp)*Xtp[i]
 
         problem += temp
-        #print(problem)
+
+        print(problem)
+
         print("SolvingStarts!")
         problem.solve() #!!!
 
-        PathletResults = []
-        for i in range(len(self.Pathlets)) :
-            PathletResults.append(Xp[i].varValue)
-        #print(PathletResults)
-
-        TrajsResults = []
-        for i in range(len(trajectories)) :
-            trajResult = []
-            for j in range(len(self.Pathlets)) :
-                trajResult.append(Xtp[i][j].varValue)
-            TrajsResults.append(trajResult)
-        #print(TrajsResults)
+        trajResults = []
         
-        return PathletResults,TrajsResults
+        for i in range(len(self.Pathlets)) :
+            if i not in PathletsUsing :
+                trajResults.append(0)
+            else :
+                trajResults.append(Xtp[i].varValue)
+            
+            if trajResults[i] == 1 :
+                self.Xp[i] = 1
+
+        print(trajResults)
+        return trajResults
 
     def MinimizePathletLearningResults(self,PathletResults) :
         #----------------------------------------------
