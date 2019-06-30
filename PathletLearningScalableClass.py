@@ -4,20 +4,13 @@ class PathletLearningScalableClass :
         self.NumOfTrajs = len(trajectories)
 
         self.Pathlets,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning= self.FindAllPossiblePathlets(trajectories)
-        print(self.Pathlets,"\n")
-        print(TpIndexesNeededForPathletLearning,"\n")
-        print(SubIndexesNeededForPathletLearning)
-
+        print(len(self.Pathlets))
         self.Xp = [0]*len(self.Pathlets)
         self.TrajsResults = list()
         for i in range(len(trajectories)) :
             self.TrajsResults.append(self.SolvePathletLearningScalableLinearly(i,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning))
 
-        print(self.Xp)
         self.MinimizePathletLearningResults(self.Xp)
-
-        print(self.Pathlets)
-        print(self.TrajsResults)
 
 
     def FindAllPossiblePathlets(self, trajectories) :
@@ -89,7 +82,9 @@ class PathletLearningScalableClass :
 
         problem += temp
 
-        print(problem)
+        print("DONE WITH CONSTRAINTS && OBJECTIVE FUNCTION")
+        #print(problem)
+        
 
         print("SolvingStarts!")
         problem.solve() #!!!
@@ -105,7 +100,7 @@ class PathletLearningScalableClass :
             if trajResults[i] == 1 :
                 self.Xp[i] = 1
 
-        print(trajResults)
+        #print(trajResults)
         return trajResults
 
     def MinimizePathletLearningResults(self,PathletResults) :

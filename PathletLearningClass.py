@@ -7,7 +7,7 @@ class PathletLearningClass :
         print(len(self.Pathlets))
 
         PathletResults,self.TrajsResults = self.SolvePathletLearningLinearly(trajectories, IndexesForConstraints)
-        print(IndexesForConstraints)
+        #print(IndexesForConstraints)
         self.MinimizePathletLearningResults(PathletResults)
 
         #print("\nAAA\n",self.Pathlets,self.TrajsResults)
@@ -40,15 +40,15 @@ class PathletLearningClass :
                         AllPossiblePathlets.append(sub)
                         seenSet.add(sub)
                     else :
-                        print("FINDINDEX")
+                        #print("FINDINDEX")
                         index = seen[sub]
-                        print("FOUNDINDEX")
+                        #print("FOUNDINDEX")
                         for k in range(i,j) :
                             trajIndexTemp[k].append(index)
 
             #print(trajIndexTemp)
             TrajsIndexesNeededForPathletLearning.append(trajIndexTemp)
-            print("FINISHED A TRAJECTORY")
+           #print("FINISHED A TRAJECTORY")
      
         print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TrajsIndexesNeededForPathletLearning
