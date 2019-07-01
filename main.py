@@ -6,7 +6,7 @@ import pandas as pd
 from ast import literal_eval
 
 start = time.time()
-
+"""
 #Thewroume oti Grid 4x4
 trajectories=[]
 
@@ -15,7 +15,7 @@ trajectories.append([(0,0),(1,1),(1,2),(0,2)])
 trajectories.append([(0,0),(1,1),(1,2)])
 #trajectories.append([(2,2)])
 plclass = PathletLearningScalableDynamicClass(trajectories)
-
+"""
 """
 plclass = PathletLearningClass(trajectories)
 print(plclass.Pathlets)
@@ -23,7 +23,7 @@ print(plclass.TrajsResults)
 print(plclass.ReturnSpecificTrajectoryByIndex(2))
 print(plclass.ReturnAllTrajsInAList())
 """
-"""
+
 trainSet = pd.read_csv(
         'train_set.csv', # replace with the correct path
         converters={"Trajectory": literal_eval},
@@ -53,10 +53,10 @@ for y in trainSet['Trajectory'] :
 print(trajectories)
 
 
-plclass = PathletLearningScalableClass(trajectories)
+plclass = PathletLearningScalableDynamicClass(trajectories)
 
 print(plclass.TrajsResults,"\n\n\n")
 
-"""
+
 end = time.time()
 print("\nRunTime:",(end - start))
