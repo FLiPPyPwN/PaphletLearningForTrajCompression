@@ -4,7 +4,7 @@ class PathletLearningScalableClass :
         self.NumOfTrajs = len(trajectories)
 
         self.Pathlets,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning= self.FindAllPossiblePathlets(trajectories)
-        print(len(self.Pathlets))
+        print(self.Pathlets,"\n\n",SubIndexesNeededForPathletLearning)
         self.Xp = [0]*len(self.Pathlets)
         self.TrajsResults = list()
         for i in range(len(trajectories)) :
