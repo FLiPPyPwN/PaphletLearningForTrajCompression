@@ -3,29 +3,24 @@ class PathletLearningScalableDynamicClass :
         self.NumOfTrajs = len(trajectories)
 
         self.Pathlets,TpIndexesNeededForPathletLearning,PositionOfPathlets = self.FindAllPossiblePathlets(trajectories)
-        print(len(self.Pathlets))
-        print(self.Pathlets,"\n")
-        print(TpIndexesNeededForPathletLearning)
 
         TrajBestDecomposition = []
+        #TA 2 PARAKATW PROSTETHIKAN GIA TAXUTHTA EFOSON UPARXOUN KOINA PATHS
+        self.FoundFStarOf = dict()
+        self.seenFStarOf = set()
 
         for i in range(len(trajectories)) :
-            TrajBestDecomposition.append(self.FindFStarForAllSubTrajs(trajectories[i],TpIndexesNeededForPathletLearning))
+            TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
+            print("Done Traj",i)
 
-        print(TrajBestDecomposition)
         self.TrajsResults = []#Xtp
         self.PathletResults = [0]*len(self.Pathlets)#Xp
 
         for trajDec in TrajBestDecomposition :
             self.TrajsResults.append(self.TurnTrajDecompositionToXtp(trajDec,PositionOfPathlets))
 
-        print(self.TrajsResults)
-
-
         self.MinimizePathletLearningResults(self.PathletResults)
 
-        print(self.Pathlets)
-        print(self.TrajsResults)
 
 
 
@@ -60,33 +55,40 @@ class PathletLearningScalableDynamicClass :
         print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TpIndexesNeededForPathletLearning,seen
 
-    def FindFStarForAllSubTrajs(self,traj,TpIndexesNeededForPathletLearning) :
+    def FindFStarForAllSubTrajsAndReturnTrajDec(self,traj,TpIndexesNeededForPathletLearning) :
         l = 1
         ValuesdictSubTraj = dict()
 
         SubTraj = []
 
         def RecursiveCalculationOfFStar(i,j) :
+            sub = tuple(traj[i:j])
+            if sub in self.seenFStarOf :
+                return self.FoundFStarOf[sub]
+
             if i < j-1 :
                 minValue = float('inf')
                 for k in range(i+1,j) :
                     val1 = RecursiveCalculationOfFStar(i,k)
                     val2 = RecursiveCalculationOfFStar(k,j)
                     ReturnValue = val1 + val2
-                    #print(sub1,"   ",sub2,"  ==== ",ReturnValue)
                     if ReturnValue < minValue :
                         minValue = ReturnValue
 
+                self.FoundFStarOf[sub] = minValue
+                self.seenFStarOf.add(sub)
                 return minValue
-
             else :
-                sub = tuple(traj[i:j]) 
                 TpResult = TpIndexesNeededForPathletLearning[sub]
-                return round((10 + 1/(len(TpResult))),5)
+                Value = round((1 + 1/(len(TpResult))),5)
+                self.FoundFStarOf[sub] = Value
+                self.seenFStarOf.add(sub)
+                return Value
 
 
         AllSubPaths = dict()
         seen = set()
+        print("STARTING RECURSION")
         for i in range(len(traj) + 1): 
                 for j in range(i + 1, len(traj) + 1):
                     subtraj = traj[i:j]
@@ -97,19 +99,16 @@ class PathletLearningScalableDynamicClass :
                         AllSubPaths[j - i] = [tuple(subtraj)]
                     seen.add(j - i)
 
-                    print(subtraj)
-
                     minVal = RecursiveCalculationOfFStar(i,j)
 
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
-
-        print(AllSubPaths)
+        print("DONE WITH RECURSIVE")
 
         Counter = len(traj) - 1
         PathsToCheck = [traj]
+
         while Counter > 0 :
             NewPathToCheck = []
-            print("AAA\n",PathsToCheck)
             for Path in PathsToCheck :
 
                 min = float('inf')
@@ -120,7 +119,6 @@ class PathletLearningScalableDynamicClass :
                         continue
 
                     Value = ValuesdictSubTraj[SubPath]
-                    print(SubPath,Value)
                     if Value < min :
                         if len(sub) is not 0 :
                             flag = True
@@ -133,19 +131,17 @@ class PathletLearningScalableDynamicClass :
                     NewPathToCheck.append(sub)
                     NewPathToCheck.append(tuple(set(Path)-set(sub)))
                 else :
-                    NewPathToCheck.append(Path)
+                    NewPathToCheck.append(tuple(Path))
 
             PathsToCheck = NewPathToCheck
             Counter = Counter - 1
-                        
-                    
-        print("\n\n\n\n\n",PathsToCheck,"\n\n\n\n\n")
+
         return PathsToCheck  
 
     def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
         Xtp = [0]*len(self.Pathlets)
         for sub in trajDec :
-            index = PositionOfPathlets[tuple(sub)]
+            index = PositionOfPathlets[sub]
             Xtp[index] = 1
             self.PathletResults[index] = 1
 
@@ -172,16 +168,9 @@ class PathletLearningScalableDynamicClass :
         NewTrajsResults = []
         for traj in self.TrajsResults :
             NewTraj = []
-            counter = 1
-            currentValue = traj[0]
-            for i in traj[1:] :
-                if currentValue == i :
-                    counter = counter + 1
-                else :
-                    NewTraj.append((int(currentValue),counter))
-                    counter = 1
-                    currentValue = i
-            NewTraj.append((int(currentValue),counter))
+            for i in range(len(traj)) :
+                if traj[i] is 1 :
+                    NewTraj.append(i)
             NewTrajsResults.append(NewTraj)
 
         self.TrajsResults = NewTrajsResults
@@ -205,14 +194,10 @@ class PathletLearningScalableDynamicClass :
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
-        TotalTimes = 0
         for i in range(len(TrajResult)) :
-            (Value,times) = TrajResult[i]
-            if Value == 1 :
-                for j in range(times) :
-                    RealTraj = self.ReturnPartRealTraj(RealTraj,self.Pathlets[TotalTimes + j])
+            index = TrajResult[i]
 
-            TotalTimes = TotalTimes + times
+            RealTraj = self.ReturnPartRealTraj(RealTraj,self.Pathlets[index])
 
         return RealTraj
 
