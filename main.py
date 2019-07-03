@@ -10,15 +10,15 @@ start = time.time()
 #Thewroume oti Grid 4x4
 trajectories=[]
 
-trajectories.append([(0,0),(1,1),(5,5),(0,1),(2,2)])
-trajectories.append([(0,0),(1,1),(7,7),(0,1),(2,2)])
-trajectories.append([(0,0),(1,1),(0,1),(2,2)])
+trajectories.append([(0,0),(1,1),(1,2),(2,2),(2,3)])
+trajectories.append([(0,0),(1,1),(1,2),(2,2),(3,2)])
+#trajectories.append([(0,0),(1,1),(0,1),(2,2)])
 #trajectories.append([(1,1),(1,2),(0,2)])
 #trajectories.append([(2,7),(2,8),(2,9)])
 plclass = PathletLearningScalableDynamicClass(trajectories)
 print("\n\n\n\n")
 print(plclass.Pathlets,"   ",plclass.TrajsResults)
-print("PrintingTrajwithIndex2",plclass.ReturnSpecificTrajectoryByIndex(0))
+print("PrintingAllTrajectories\n",plclass.ReturnAllTrajsInAList())
 
 
 """
@@ -47,7 +47,7 @@ for y in trainSet['Trajectory'] :
     if x == 1 :
         break
 
-print(trajectories[0])
+print(trajectories[0][0],trajectories[0][-1])
 plclass = PathletLearningScalableDynamicClass(trajectories)
 
 print("\n\n\n\n")

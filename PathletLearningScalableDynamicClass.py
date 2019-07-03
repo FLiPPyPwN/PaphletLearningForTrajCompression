@@ -1,8 +1,13 @@
+import time
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
         self.NumOfTrajs = len(trajectories)
-
+        start = time.time()
         self.Pathlets,TpIndexesNeededForPathletLearning,PositionOfPathlets = self.FindAllPossiblePathlets(trajectories)
+        end = time.time()
+        print("\nRunTime:",(end - start))
+
+        print(len(self.Pathlets))
 
         TrajBestDecomposition = []
         #TA 2 PARAKATW PROSTETHIKAN GIA TAXUTHTA EFOSON UPARXOUN KOINA PATHS
@@ -20,9 +25,6 @@ class PathletLearningScalableDynamicClass :
             self.TrajsResults.append(self.TurnTrajDecompositionToXtp(trajDec,PositionOfPathlets))
 
         self.MinimizePathletLearningResults(self.PathletResults)
-
-
-
 
 
     def FindAllPossiblePathlets(self, trajectories) :
@@ -60,7 +62,7 @@ class PathletLearningScalableDynamicClass :
         ValuesdictSubTraj = dict()
 
         SubTraj = []
-        print(TpIndexesNeededForPathletLearning)
+        #print(TpIndexesNeededForPathletLearning)
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1 :
                 sub = tuple(traj[i:j])
@@ -94,6 +96,7 @@ class PathletLearningScalableDynamicClass :
         AllSubPaths = dict()
         seen = set()
         print("STARTING RECURSION")
+        start = time.time()
 
         ChoicesInCertainStep = dict()
         MaxIndexInCertainStep = dict()
@@ -118,12 +121,14 @@ class PathletLearningScalableDynamicClass :
 
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
         print("DONE WITH RECURSIVE")
+        end = time.time()
+        print("\nRunTime:",(end - start))
 
         print(ValuesdictSubTraj,"\n")
         #print(AllSubPaths)
-        print(ChoicesInCertainStep,"\n")
+        #print(ChoicesInCertainStep,"\n")
         
-        print(MaxIndexInCertainStep,"\n")
+        #print(MaxIndexInCertainStep,"\n")
         
         BestCompleteDecompositionValue = ValuesdictSubTraj[tuple(traj)]
 
@@ -157,23 +162,22 @@ class PathletLearningScalableDynamicClass :
                 index = index + 1
 
             return [],False
-
+        start = time.time()
         BestDecTraj,temp = BacktrackingToFindBestDecomposition(traj[0],0)
-        print("LOLOLOLO   ",BestDecTraj)
+        end = time.time()
+        print("\nRunTime:",(end - start))
+        #print("LOLOLOLO   ",BestDecTraj)
         return BestDecTraj
 
 
 
     def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
-        Xtp = [0]*len(self.Pathlets)
-        print(trajDec)
-        for sub in trajDec :
-            if sub not in PositionOfPathlets and len(sub) is not 2 :
-                print("WTF ",PositionOfPathlets)
-                print(sub)
-                sub.reverse()
-            index = PositionOfPathlets[sub]
-            Xtp[index] = 1
+        Xtp = [0]*len(trajDec)
+        #print(trajDec)
+
+        for i in range(len(trajDec)) :
+            index = PositionOfPathlets[trajDec[i]]
+            Xtp[i] = index
             self.PathletResults[index] = 1
 
         return Xtp
@@ -192,43 +196,22 @@ class PathletLearningScalableDynamicClass :
         for i in indexes :
             del self.Pathlets[i - k]
             del PathletResults[i - k]
-            for traj in self.TrajsResults :
-                del traj[i - k]
+
+            for f in range(len(self.TrajsResults)) :
+                for ff in range(len(self.TrajsResults[f])) :
+                    index = self.TrajsResults[f][ff]
+                    if index > i - k :
+                        
+                        self.TrajsResults[f][ff] = index - 1
+                
             k = k + 1
-
-        NewTrajsResults = []
-        for traj in self.TrajsResults :
-            NewTraj = []
-            for i in range(len(traj)) :
-                if traj[i] is 1 :
-                    NewTraj.append(i)
-            NewTrajsResults.append(NewTraj)
-
-        self.TrajsResults = NewTrajsResults
-
-
-    def ReturnPartRealTraj(self, subtraj1,subtraj2) :
-        if subtraj1 == [] :
-            return subtraj2
-        (x1,y1) = subtraj1[-1]
-        (x2,y2) = subtraj2[0]
-        dist1 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        (x1,y1) = subtraj1[0]
-        (x2,y2) = subtraj2[-1]
-        dist2 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        if dist1 < dist2 :
-            return subtraj1 + subtraj2
-        else :
-            return subtraj2 + subtraj1
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
         for i in range(len(TrajResult)) :
             index = TrajResult[i]
 
-            RealTraj = self.ReturnPartRealTraj(RealTraj,self.Pathlets[index])
+            RealTraj = RealTraj + list(self.Pathlets[index])
 
         return RealTraj
 
