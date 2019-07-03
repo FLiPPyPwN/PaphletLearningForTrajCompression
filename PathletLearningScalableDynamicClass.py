@@ -43,12 +43,12 @@ class PathletLearningScalableDynamicClass :
                     sub = tuple(traj[i:j])
                     #print(sub)
                     if (sub not in seenSet) :
-                        TpIndexesNeededForPathletLearning[sub] = [trajCounter]
+                        TpIndexesNeededForPathletLearning[sub] = {trajCounter}
                         seen[sub] = len(AllPossiblePathlets)
                         AllPossiblePathlets.append(sub)
                         seenSet.add(sub)
                     else :
-                        TpIndexesNeededForPathletLearning[sub].append(trajCounter)
+                        TpIndexesNeededForPathletLearning[sub].add(trajCounter)
 
             trajCounter = trajCounter + 1
 
@@ -60,13 +60,14 @@ class PathletLearningScalableDynamicClass :
         ValuesdictSubTraj = dict()
 
         SubTraj = []
-
+        print(TpIndexesNeededForPathletLearning)
         def RecursiveCalculationOfFStar(i,j) :
-            sub = tuple(traj[i:j])
-            if sub in self.seenFStarOf :
-                return self.FoundFStarOf[sub]
-
+            print(i,j)
             if i < j-1 :
+                sub = tuple(traj[i:j])
+                if sub in self.seenFStarOf :
+                    return self.FoundFStarOf[sub]
+
                 minValue = float('inf')
                 for k in range(i+1,j) :
                     val1 = RecursiveCalculationOfFStar(i,k)
@@ -79,6 +80,11 @@ class PathletLearningScalableDynamicClass :
                 self.seenFStarOf.add(sub)
                 return minValue
             else :
+                sub = tuple(traj[i:i+2])
+                print(sub)
+                if sub in self.seenFStarOf :
+                   return self.FoundFStarOf[sub]
+
                 TpResult = TpIndexesNeededForPathletLearning[sub]
                 Value = round((1 + 1/(len(TpResult))),5)
                 self.FoundFStarOf[sub] = Value
@@ -104,8 +110,12 @@ class PathletLearningScalableDynamicClass :
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
         print("DONE WITH RECURSIVE")
 
+        #print(AllSubPaths)
         Counter = len(traj) - 1
         PathsToCheck = [traj]
+        print(ValuesdictSubTraj)
+
+        CompletedTrajPaths = []
 
         while Counter > 0 :
             NewPathToCheck = []
@@ -115,7 +125,21 @@ class PathletLearningScalableDynamicClass :
                 sub = []
                 flag = False
                 for SubPath in AllSubPaths[Counter] :
-                    if len(tuple(set(SubPath)-set(Path))) is not 0 :
+
+                    LeftOrRight = -1
+
+                    flag2 = False
+                    for i in range(2) :
+                        if Path[i] is SubPath[0] :
+                            if list(SubPath) == list(Path[i:len(SubPath) + i]) :
+                                LeftOrRight = i
+                                flag2 = True
+                                break
+                            else : 
+                                continue
+                        else : continue
+
+                    if flag2 is False :
                         continue
 
                     Value = ValuesdictSubTraj[SubPath]
@@ -129,18 +153,29 @@ class PathletLearningScalableDynamicClass :
 
                 if flag == True :
                     NewPathToCheck.append(sub)
-                    NewPathToCheck.append(tuple(set(Path)-set(sub)))
+                    for i in sub :
+                        Path = list(Path)
+                        Path.remove(i)
+                    if LeftOrRight == 0 :
+                        CompletedTrajPaths.append(tuple(Path))
+                    else : 
+                        CompletedTrajPaths = list(tuple(Path)) + CompletedTrajPaths
                 else :
-                    NewPathToCheck.append(tuple(Path))
+                    CompletedTrajPaths.append(tuple(Path))
 
             PathsToCheck = NewPathToCheck
             Counter = Counter - 1
-
-        return PathsToCheck  
+        print(PathsToCheck)
+        return CompletedTrajPaths  
 
     def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
         Xtp = [0]*len(self.Pathlets)
+        print(trajDec)
         for sub in trajDec :
+            if sub not in PositionOfPathlets and len(sub) is not 2 :
+                print("WTF ",PositionOfPathlets)
+                print(sub)
+                sub.reverse()
             index = PositionOfPathlets[sub]
             Xtp[index] = 1
             self.PathletResults[index] = 1
