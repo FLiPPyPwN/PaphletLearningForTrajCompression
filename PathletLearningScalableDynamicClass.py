@@ -62,7 +62,6 @@ class PathletLearningScalableDynamicClass :
         SubTraj = []
         print(TpIndexesNeededForPathletLearning)
         def RecursiveCalculationOfFStar(i,j) :
-            print(i,j)
             if i < j-1 :
                 sub = tuple(traj[i:j])
                 if sub in self.seenFStarOf :
@@ -70,6 +69,7 @@ class PathletLearningScalableDynamicClass :
 
                 minValue = float('inf')
                 for k in range(i+1,j) :
+
                     val1 = RecursiveCalculationOfFStar(i,k)
                     val2 = RecursiveCalculationOfFStar(k,j)
                     ReturnValue = val1 + val2
@@ -81,12 +81,11 @@ class PathletLearningScalableDynamicClass :
                 return minValue
             else :
                 sub = tuple(traj[i:i+2])
-                print(sub)
                 if sub in self.seenFStarOf :
                    return self.FoundFStarOf[sub]
 
                 TpResult = TpIndexesNeededForPathletLearning[sub]
-                Value = round((1 + 1/(len(TpResult))),5)
+                Value = round((1.0 + 1.0/(len(TpResult))),5)
                 self.FoundFStarOf[sub] = Value
                 self.seenFStarOf.add(sub)
                 return Value
@@ -95,9 +94,19 @@ class PathletLearningScalableDynamicClass :
         AllSubPaths = dict()
         seen = set()
         print("STARTING RECURSION")
-        for i in range(len(traj) + 1): 
+
+        ChoicesInCertainStep = dict()
+        MaxIndexInCertainStep = dict()
+        for i in range(len(traj) + 1):
+                if (i < len(traj)) :
+                    subtraj222 = traj[i]
+                    ChoicesInCertainStep[subtraj222] = list()
+                    MaxIndexInCertainStep[subtraj222] = len(traj) - i
                 for j in range(i + 1, len(traj) + 1):
                     subtraj = traj[i:j]
+
+                    if (i < len(traj)) :
+                        ChoicesInCertainStep[subtraj222].append(subtraj)
 
                     if j - i in seen :
                         AllSubPaths[j - i].append(tuple(subtraj))
@@ -110,63 +119,50 @@ class PathletLearningScalableDynamicClass :
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
         print("DONE WITH RECURSIVE")
 
+        print(ValuesdictSubTraj,"\n")
         #print(AllSubPaths)
-        Counter = len(traj) - 1
-        PathsToCheck = [traj]
-        print(ValuesdictSubTraj)
+        print(ChoicesInCertainStep,"\n")
+        
+        print(MaxIndexInCertainStep,"\n")
+        
+        BestCompleteDecompositionValue = ValuesdictSubTraj[tuple(traj)]
 
-        CompletedTrajPaths = []
+        def BacktrackingToFindBestDecomposition(subpath,Value) :
+            index = 0
+            while index < MaxIndexInCertainStep[subpath] :
+                SubPathNow = tuple(ChoicesInCertainStep[subpath][index])
+                print(SubPathNow)
 
-        while Counter > 0 :
-            NewPathToCheck = []
-            for Path in PathsToCheck :
+                if index + 1 < MaxIndexInCertainStep[subpath] :
+                    Nextsubpath = ChoicesInCertainStep[subpath][index + 1][-1]
+                    ValueNow = ValuesdictSubTraj[SubPathNow]
+                    if Value + ValueNow > BestCompleteDecompositionValue :
+                        return [],False
+                    else :
+                        SubPathForward,flag = BacktrackingToFindBestDecomposition(Nextsubpath,Value+ValueNow)
+                        if flag :
+                            Result = list()
+                            Result.append(SubPathNow)
+                            Result = Result + SubPathForward
 
-                min = float('inf')
-                sub = []
-                flag = False
-                for SubPath in AllSubPaths[Counter] :
+                            return Result,True
 
-                    LeftOrRight = -1
-
-                    flag2 = False
-                    for i in range(2) :
-                        if Path[i] is SubPath[0] :
-                            if list(SubPath) == list(Path[i:len(SubPath) + i]) :
-                                LeftOrRight = i
-                                flag2 = True
-                                break
-                            else : 
-                                continue
-                        else : continue
-
-                    if flag2 is False :
-                        continue
-
-                    Value = ValuesdictSubTraj[SubPath]
-                    if Value < min :
-                        if len(sub) is not 0 :
-                            flag = True
-                        min = Value
-                        sub = SubPath
-                    elif Value > min :
-                        flag = True
-
-                if flag == True :
-                    NewPathToCheck.append(sub)
-                    for i in sub :
-                        Path = list(Path)
-                        Path.remove(i)
-                    if LeftOrRight == 0 :
-                        CompletedTrajPaths.append(tuple(Path))
-                    else : 
-                        CompletedTrajPaths = list(tuple(Path)) + CompletedTrajPaths
                 else :
-                    CompletedTrajPaths.append(tuple(Path))
+                    ValueNow = ValuesdictSubTraj[SubPathNow]
+                    if Value + ValueNow == BestCompleteDecompositionValue :
+                        return [SubPathNow],True
+                    else :
+                        return [],False
 
-            PathsToCheck = NewPathToCheck
-            Counter = Counter - 1
-        print(PathsToCheck)
-        return CompletedTrajPaths  
+                index = index + 1
+
+            return [],False
+
+        BestDecTraj,temp = BacktrackingToFindBestDecomposition(traj[0],0)
+        print("LOLOLOLO   ",BestDecTraj)
+        return BestDecTraj
+
+
 
     def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
         Xtp = [0]*len(self.Pathlets)
