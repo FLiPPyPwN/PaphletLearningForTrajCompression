@@ -10,9 +10,6 @@ class PathletLearningScalableDynamicClass :
         print(len(self.Pathlets))
 
         TrajBestDecomposition = []
-        #TA 2 PARAKATW PROSTETHIKAN GIA TAXUTHTA EFOSON UPARXOUN KOINA PATHS
-        self.FoundFStarOf = dict()
-        self.seenFStarOf = set()
 
         for i in range(len(trajectories)) :
             TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
@@ -66,8 +63,6 @@ class PathletLearningScalableDynamicClass :
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1 :
                 sub = tuple(traj[i:j])
-                if sub in self.seenFStarOf :
-                    return self.FoundFStarOf[sub]
 
                 minValue = float('inf')
                 for k in range(i+1,j) :
@@ -78,18 +73,14 @@ class PathletLearningScalableDynamicClass :
                     if ReturnValue < minValue :
                         minValue = ReturnValue
 
-                self.FoundFStarOf[sub] = minValue
-                self.seenFStarOf.add(sub)
                 return minValue
             else :
                 sub = tuple(traj[i:i+2])
-                if sub in self.seenFStarOf :
-                   return self.FoundFStarOf[sub]
-
+                
                 TpResult = TpIndexesNeededForPathletLearning[sub]
-                Value = round((1.0 + 1.0/(len(TpResult))),5)
-                self.FoundFStarOf[sub] = Value
-                self.seenFStarOf.add(sub)
+                l = 1
+                Value = l + 1.0/(len(TpResult))
+                print(sub,len(sub),Value)
                 return Value
 
 
@@ -116,8 +107,8 @@ class PathletLearningScalableDynamicClass :
                     else :
                         AllSubPaths[j - i] = [tuple(subtraj)]
                     seen.add(j - i)
-
-                    minVal = RecursiveCalculationOfFStar(i,j)
+                    print("AAAA:  ",subtraj,i,j-1)
+                    minVal = RecursiveCalculationOfFStar(i,j-1)
 
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
         print("DONE WITH RECURSIVE")
