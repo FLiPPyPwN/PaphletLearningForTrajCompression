@@ -5,11 +5,15 @@ class PathletLearningScalableDynamicClass :
         start = time.time()
         self.Pathlets,TpIndexesNeededForPathletLearning,PositionOfPathlets = self.FindAllPossiblePathlets(trajectories)
         end = time.time()
-        print("\nRunTime:",(end - start))
+        print("RunTime FindAllPossiblePathlets:",(end - start))
 
         print(len(self.Pathlets))
 
         TrajBestDecomposition = []
+
+        #Use for faster execution of Recursion
+        self.FoundValuesOfSubPaths = dict()
+        self.seen = set()
 
         for i in range(len(trajectories)) :
             TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
@@ -40,7 +44,7 @@ class PathletLearningScalableDynamicClass :
                 for j in range(i + 1, len(traj) + 1): 
 
                     sub = tuple(traj[i:j])
-                    #print(sub)
+
                     if (sub not in seenSet) :
                         TpIndexesNeededForPathletLearning[sub] = {trajCounter}
                         seen[sub] = len(AllPossiblePathlets)
@@ -58,11 +62,14 @@ class PathletLearningScalableDynamicClass :
         l = 1
         ValuesdictSubTraj = dict()
 
-        SubTraj = []
-        #print(TpIndexesNeededForPathletLearning)
+        
+
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1:
                 sub = tuple(traj[i:j+1])
+
+                if sub in self.seen :
+                    return self.FoundValuesOfSubPaths[sub]
 
                 minValue = float('inf')
                 for k in range(i+1,j) :
@@ -72,144 +79,120 @@ class PathletLearningScalableDynamicClass :
                     if ReturnValue < minValue :
                         minValue = ReturnValue
 
+                self.seen.add(sub)
+                self.FoundValuesOfSubPaths[sub] = minValue
+
                 return minValue
             else :
                 sub = tuple(traj[i:i+2])
+
+                if sub in self.seen :
+                    return self.FoundValuesOfSubPaths[sub]
+                
                 
                 TpResult = TpIndexesNeededForPathletLearning[sub]
-                l = 1
+                l = 0.0001
                 Value = l + 1.0/(len(TpResult))
+
+                self.seen.add(sub)
+                self.FoundValuesOfSubPaths[sub] = Value
+
                 return Value
 
-
-        AllSubPaths = dict()
-        seen = set()
-        print("STARTING RECURSION")
+        print("\nSTARTING RECURSION")
         start = time.time()
-
-        MinValuePerLen = dict()
 
         for i in range(len(traj) + 1):
                 for j in range(i + 1, len(traj) + 1):
-                    if i == j - 1 : continue
+                    #if i == j - 1 : continue
                     subtraj = traj[i:j]
 
-                    if j - i in seen :
-                        AllSubPaths[j - i].append(tuple(subtraj))
-                    else :
-                        AllSubPaths[j - i] = [tuple(subtraj)]
-                    seen.add(j - i)
-
                     minVal = RecursiveCalculationOfFStar(i,j-1)
-
-                    if j-i not in MinValuePerLen :
-                        MinValuePerLen[j-i] =  (minVal,False)
-                    else :
-                        v,f = MinValuePerLen[j-i]
-                        if v > minVal :
-                            MinValuePerLen[j-i] = (minVal,True)
-                        elif v < minVal:
-                            MinValuePerLen[j-i] = (v,True)
 
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
         print("DONE WITH RECURSIVE")
         end = time.time()
-        print("\nRunTime:",(end - start))
+        print("RunTime Recursion:",(end - start))
 
-        print(TpIndexesNeededForPathletLearning)
-        print(ValuesdictSubTraj,"\n")
-        #print(AllSubPaths)
         
-        def BacktrackingToFindBestDecomposition() :
+        def BacktrackingToFindBestDecomposition2(Path) :
+            if len(Path) == 2 :
+                Value1 = ValuesdictSubTraj[(Path[0],)]
+                Value2 = ValuesdictSubTraj[(Path[1],)]
 
-            BestTrajDec = []  #!!!
-            
-            def SearchAndAddToOnePathLonelyElements() :
-                temp = len(BestTrajDec)
-                SubPToAdd = []
-                flag = True
-                for j in range(len(BestTrajDec) - 1,-1,-1) :
-                    if len(BestTrajDec[j]) == 1:
-                        (x,) = BestTrajDec[j]
-                        SubPToAdd.append(x)
+                if Value1 == Value2 :
+                    return [(Path[0],Path[1])]
+                return Path
+
+            BestpathDec = []
+            left = []
+            right = []
+
+            counter = len(Path) - 1
+            flag = True
+            while flag :
+                MinValue = float('inf')
+                Min_i = -1
+                FoundBetterSubPath = False
+                for i in range(len(Path) - counter + 1) :
+                    subpath = Path[i:i+counter]
+
+                    Value = ValuesdictSubTraj[tuple(subpath)]
+                    if MinValue == Value :
                         continue
-                    elif j < temp - 2 :
-                        del BestTrajDec[len(BestTrajDec)-len(SubPToAdd):len(SubPToAdd)+1]
-                        SubPToAdd = reversed(SubPToAdd)
-                        BestTrajDec.append(tuple(SubPToAdd))
-                        flag = False
-                        break
-                    else : 
-                        flag = False
-                        break
-                if flag and SubPToAdd:
-                    del BestTrajDec[len(BestTrajDec)-len(SubPToAdd):len(SubPToAdd)+1]
-                    SubPToAdd = reversed(SubPToAdd)
-                    BestTrajDec.append(tuple(SubPToAdd))
+                    elif Value < MinValue and MinValue == float('inf') :
+                        MinValue = Value
+                        Min_i = i
+                    elif Value > MinValue :
+                        FoundBetterSubPath = True
+                    else :
+                        MinValue = Value
+                        Min_i = i
+                        FoundBetterSubPath = True
 
+                if FoundBetterSubPath :
+                    if Min_i > 0 :
+                        left = left + Path[0:Min_i]
+                    if Min_i + counter < len(Path) :
+                        right =  Path[Min_i+counter:len(Path)]+right 
+                    Path = Path[Min_i:Min_i+counter]
 
-            i = 0
-            while i < len(traj) :
-                if i == len(traj) - 1 :
-                    BestTrajDec.append((traj[i],))
-                    i = i + 1
-                    continue
+                counter = counter - 1
+                if counter == 1 :
+                    flag = False
+            if len(left) > 1 :
+                left = BacktrackingToFindBestDecomposition2(left)
+            if len(right) > 1 :
+                right = BacktrackingToFindBestDecomposition2(right)
 
-                count = 1
+            if left :
+                for t in left :
+                    if type(t[0]) is not tuple :
+                        BestpathDec.append((t,))
+                    else :
+                        BestpathDec.append(t)
+            BestpathDec.append(tuple(Path))
+            if right :
+                for t in right :
+                    if type(t[0]) is not tuple :
+                        BestpathDec.append((t,))
+                    else :
+                        BestpathDec.append(t)
 
-                sub = traj[i:i+count+1]
-
-                (MinValueL,f) = MinValuePerLen[2]
-
-                Value = ValuesdictSubTraj[tuple(sub)]
-                
-                if not(MinValueL == Value)  or i == len(traj) - 1 or not(f) :
-                    BestTrajDec.append((traj[i],))
-                    i = i + 1
-                    continue
-                else :
-                    SearchAndAddToOnePathLonelyElements()
-
-                    count = count + 1
-                    while True :
-                        sub = traj[i:i+count+1]
-                        sub1 = traj[i:i+count]
-                        sub2 = traj[i+1:i+count+1]
-
-                        (MinValueLL,ff) = MinValuePerLen[count+1]
-
-                        (MinValueL,f) = MinValuePerLen[count]
-
-                        Value = ValuesdictSubTraj[tuple(sub)]
-
-                        if not(MinValueLL == Value) or not(ff):
-                            BestTrajDec.append(tuple(traj[i:i+count]))
-                            i = i + count
-                            break
-                        else:
-                            Value1 = ValuesdictSubTraj[tuple(sub1)]
-                            Value2 = ValuesdictSubTraj[tuple(sub2)]
-                            if not(MinValueL == Value1 and MinValueL == Value2) or not(f):
-                                BestTrajDec.append(tuple(traj[i:i+count]))
-                                i = i + count
-                                break
-                            else :
-                                count = count + 1
-                                if i + count == len(traj) :
-                                    BestTrajDec.append(tuple(traj[i:i+count]))
-                                    i = i + count
-                                    break
-                                    
-            SearchAndAddToOnePathLonelyElements()
-
-            return BestTrajDec
-
-        print("\n\n\n",MinValuePerLen,"\n\n\n")
+            return BestpathDec
         
+        print("\nFindingBestDecompositionofT")
         start = time.time()
-        BestDecTraj = BacktrackingToFindBestDecomposition()
+
+        BestDecTraj = BacktrackingToFindBestDecomposition2(traj)
+        
+        print("DONE WITH BestDecompositionBacktrack")
+
+        print("Best Decomposition : ",BestDecTraj)
+        
+        #BestDecTraj = BacktrackingToFindBestDecomposition()
         end = time.time()
-        print("\nRunTime:",(end - start))
+        print("RunTime BestDecomposition:",(end - start))
         print(BestDecTraj)             
 
         return BestDecTraj
@@ -218,8 +201,7 @@ class PathletLearningScalableDynamicClass :
 
     def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
         Xtp = [0]*len(trajDec)
-        #print(trajDec)
-        print(trajDec)
+
         for i in range(len(trajDec)) :
             index = PositionOfPathlets[trajDec[i]]
             Xtp[i] = index
