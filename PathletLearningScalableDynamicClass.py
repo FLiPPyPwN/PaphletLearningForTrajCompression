@@ -1,4 +1,5 @@
 import time
+import gc
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
         self.NumOfTrajs = len(trajectories)
@@ -19,13 +20,38 @@ class PathletLearningScalableDynamicClass :
             TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
             print("Done Traj",i)
 
+        del self.FoundValuesOfSubPaths
+        del self.seen
+        del TpIndexesNeededForPathletLearning
+
+        gc.collect()
+
         self.TrajsResults = []#Xtp
         self.PathletResults = [0]*len(self.Pathlets)#Xp
+
+        start = time.time()
 
         for trajDec in TrajBestDecomposition :
             self.TrajsResults.append(self.TurnTrajDecompositionToXtp(trajDec,PositionOfPathlets))
 
-        self.MinimizePathletLearningResults(self.PathletResults)
+        end = time.time()
+        print("RunTime TrajDecomposition:",(end - start))
+
+        del PositionOfPathlets
+        del TrajBestDecomposition
+
+        gc.collect()
+
+        start = time.time()
+
+        self.MinimizePathletLearningResults()
+
+        end = time.time()
+        print("RunTime MinimizeResults:",(end - start))
+
+        del self.PathletResults
+
+        print(len(self.Pathlets))
 
 
     def FindAllPossiblePathlets(self, trajectories) :
@@ -63,7 +89,6 @@ class PathletLearningScalableDynamicClass :
         ValuesdictSubTraj = dict()
 
         
-
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1:
                 sub = tuple(traj[i:j+1])
@@ -104,7 +129,7 @@ class PathletLearningScalableDynamicClass :
 
         for i in range(len(traj) + 1):
                 for j in range(i + 1, len(traj) + 1):
-                    #if i == j - 1 : continue
+
                     subtraj = traj[i:j]
 
                     minVal = RecursiveCalculationOfFStar(i,j-1)
@@ -115,7 +140,7 @@ class PathletLearningScalableDynamicClass :
         print("RunTime Recursion:",(end - start))
 
         
-        def BacktrackingToFindBestDecomposition2(Path) :
+        def BacktrackingToFindBestDecomposition(Path) :
             if len(Path) == 2 :
                 Value1 = ValuesdictSubTraj[(Path[0],)]
                 Value2 = ValuesdictSubTraj[(Path[1],)]
@@ -161,9 +186,9 @@ class PathletLearningScalableDynamicClass :
                 if counter == 1 :
                     flag = False
             if len(left) > 1 :
-                left = BacktrackingToFindBestDecomposition2(left)
+                left = BacktrackingToFindBestDecomposition(left)
             if len(right) > 1 :
-                right = BacktrackingToFindBestDecomposition2(right)
+                right = BacktrackingToFindBestDecomposition(right)
 
             if left :
                 for t in left :
@@ -184,7 +209,7 @@ class PathletLearningScalableDynamicClass :
         print("\nFindingBestDecompositionofT")
         start = time.time()
 
-        BestDecTraj = BacktrackingToFindBestDecomposition2(traj)
+        BestDecTraj = BacktrackingToFindBestDecomposition(traj)
         
         print("DONE WITH BestDecompositionBacktrack")
 
@@ -209,29 +234,49 @@ class PathletLearningScalableDynamicClass :
 
         return Xtp
         
-    def MinimizePathletLearningResults(self,PathletResults) :
+    def MinimizePathletLearningResults(self) :
         #----------------------------------------------
         #Parakatw meiwnw to megethos twn dedomenwn mas
         indexes = []
-        for i in range(len(PathletResults)) :
-            if PathletResults[i] == 0 :
+        indexes1 = []
+        DictionaryForIndexReduction = dict()
+        counter = 0
+
+        start = time.time()
+        
+        for i in range(len(self.PathletResults)) :
+            if self.PathletResults[i] == 0 :
                 indexes.append(i)
+                counter = counter + 1
+            else :
+                indexes1.append(i)
+                DictionaryForIndexReduction[i] = counter
 
-        #print("\nIndexes to Remove: ",indexes)
+        end = time.time()
+        print("RunTime Found Indexes For Minimize:",(end - start))
 
+        start = time.time()
+
+        NewPathlets = []
         k = 0
-        for i in indexes :
-            del self.Pathlets[i - k]
-            del PathletResults[i - k]
-
-            for f in range(len(self.TrajsResults)) :
-                for ff in range(len(self.TrajsResults[f])) :
-                    index = self.TrajsResults[f][ff]
-                    if index > i - k :
-                        
-                        self.TrajsResults[f][ff] = index - 1
-                
+        for i in indexes1 :
+            NewPathlets.append(self.Pathlets[i - k])
             k = k + 1
+
+        self.Pathlets = NewPathlets
+
+        end = time.time()
+        print("RunTime Done NewPathlets For Minimzie:",(end - start))
+
+        start = time.time()
+
+        for i in range(len(self.TrajsResults)) :
+            for f in range(len(self.TrajsResults[i])) :
+                index = self.TrajsResults[i][f]
+                self.TrajsResults[i][f] = self.TrajsResults[i][f] - DictionaryForIndexReduction[index]
+
+        end = time.time()
+        print("RunTime Recalculated TrajsResults:",(end - start)) 
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
