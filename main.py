@@ -51,6 +51,8 @@ for i in range(len(AllTrajs)) :
 if flag :
         print("trajectories not the same")
 
+print(len(plclass.Pathlets))
+
 
 end = time.time()
 print("\nRunTime:",(end - start))

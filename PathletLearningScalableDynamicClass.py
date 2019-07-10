@@ -75,7 +75,7 @@ class PathletLearningScalableDynamicClass :
                     return self.FoundValuesOfSubPaths[sub]
                 
                 TpResult = TpCounterNeededForPathletLearning[sub]
-                l = 0.0001
+                l = 1
                 Value = l + 1.0/TpResult
 
                 self.FoundValuesOfSubPaths[sub] = Value
@@ -101,6 +101,10 @@ class PathletLearningScalableDynamicClass :
                 if Value1 == Value2 :
                     return [self.PathToPathletIndex((Path[0],Path[1]))]
                 return [self.PathToPathletIndex((Path[0],)),self.PathToPathletIndex((Path[1],))]
+            elif len(Path) == 1 :
+                return [self.PathToPathletIndex(tuple(Path))]
+            elif len(Path) == 0 :
+                return []
 
             BestpathDec = []
             left = []
@@ -139,34 +143,22 @@ class PathletLearningScalableDynamicClass :
                 if counter == 1 :
                     flag = False
 
-            flagleft = True
-            flagright = True
-            if len(left) > 1 :
-                left = BacktrackingToFindBestDecomposition(left)
-            else :
-                flagleft = False
-            if len(right) > 1 :
-                right = BacktrackingToFindBestDecomposition(right)
-            else :
-                flagright = False
 
-
-            if left and flagleft:
+            left = BacktrackingToFindBestDecomposition(left)
+            right = BacktrackingToFindBestDecomposition(right)
+            
+            if left :
                 BestpathDec = left
-            else :
-                BestpathDec = [self.PathToPathletIndex(tuple(left))]
             BestpathDec = BestpathDec + [self.PathToPathletIndex(tuple(Path))]
-            if right and flagright:
+            if right :
                 BestpathDec = BestpathDec + right
-            else :
-                BestpathDec = BestpathDec + [self.PathToPathletIndex(tuple(right))]
 
             return BestpathDec
 
 
-        BestDecTraj = BacktrackingToFindBestDecomposition(traj)          
+        BestDecTrajViaPathlet = BacktrackingToFindBestDecomposition(traj)          
 
-        return BestDecTraj
+        return BestDecTrajViaPathlet
 
     def PathToPathletIndex(self,path) :
         index = -1
