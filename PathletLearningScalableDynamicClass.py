@@ -192,14 +192,14 @@ class PathletLearningScalableDynamicClass :
 
             if left :
                 for t in left :
-                    if type(t[0]) is not tuple :
+                    if type(t) is not tuple :
                         BestpathDec.append((t,))
                     else :
                         BestpathDec.append(t)
             BestpathDec.append(tuple(Path))
             if right :
                 for t in right :
-                    if type(t[0]) is not tuple :
+                    if type(t) is not tuple  :
                         BestpathDec.append((t,))
                     else :
                         BestpathDec.append(t)
@@ -242,7 +242,7 @@ class PathletLearningScalableDynamicClass :
         DictionaryForIndexReduction = dict()
         counter = 0
 
-        start = time.time()
+        NewPathlets = []
         
         for i in range(len(self.PathletResults)) :
             if self.PathletResults[i] == 0 :
@@ -251,32 +251,15 @@ class PathletLearningScalableDynamicClass :
             else :
                 indexes1.append(i)
                 DictionaryForIndexReduction[i] = counter
-
-        end = time.time()
-        print("RunTime Found Indexes For Minimize:",(end - start))
-
-        start = time.time()
-
-        NewPathlets = []
-        k = 0
-        for i in indexes1 :
-            NewPathlets.append(self.Pathlets[i - k])
-            k = k + 1
+                NewPathlets.append(self.Pathlets[i])
 
         self.Pathlets = NewPathlets
-
-        end = time.time()
-        print("RunTime Done NewPathlets For Minimzie:",(end - start))
-
-        start = time.time()
 
         for i in range(len(self.TrajsResults)) :
             for f in range(len(self.TrajsResults[i])) :
                 index = self.TrajsResults[i][f]
                 self.TrajsResults[i][f] = self.TrajsResults[i][f] - DictionaryForIndexReduction[index]
 
-        end = time.time()
-        print("RunTime Recalculated TrajsResults:",(end - start)) 
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
