@@ -26,24 +26,16 @@ trainSet = pd.read_csv(
         converters={"barefootSegmentsSequence": literal_eval},
         index_col='newTripID')
 
-end = time.time()
-print("\nRunTime to ReadCsvFile:",(end - start))
-
-start = time.time()
-
 trajectories = []
 x = 0
 for y in trainSet['barefootSegmentsSequence'] :
     trajectories.append(y)
 
     x = x + 1
-    if x == 1000 :
+    if x == 100 :
         break
 
 plclass = PathletLearningScalableDynamicClass(trajectories)
-
-print("\n\n")
-
 
 AllTrajs = plclass.ReturnAllTrajsInAList()
 
@@ -54,7 +46,6 @@ for i in range(len(AllTrajs)) :
 
 if flag :
         print("trajectories not the same")
-
 
 
 end = time.time()

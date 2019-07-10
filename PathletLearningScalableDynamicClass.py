@@ -3,12 +3,7 @@ import gc
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
         self.NumOfTrajs = len(trajectories)
-        start = time.time()
         self.Pathlets,TpIndexesNeededForPathletLearning,PositionOfPathlets = self.FindAllPossiblePathlets(trajectories)
-        end = time.time()
-        print("RunTime FindAllPossiblePathlets:",(end - start))
-
-        print(len(self.Pathlets))
 
         TrajBestDecomposition = []
 
@@ -18,7 +13,6 @@ class PathletLearningScalableDynamicClass :
 
         for i in range(len(trajectories)) :
             TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
-            print("Done Traj",i)
 
         del self.FoundValuesOfSubPaths
         del self.seen
@@ -29,33 +23,20 @@ class PathletLearningScalableDynamicClass :
         self.TrajsResults = []#Xtp
         self.PathletResults = [0]*len(self.Pathlets)#Xp
 
-        start = time.time()
-
         for trajDec in TrajBestDecomposition :
             self.TrajsResults.append(self.TurnTrajDecompositionToXtp(trajDec,PositionOfPathlets))
-
-        end = time.time()
-        print("RunTime TrajDecomposition:",(end - start))
 
         del PositionOfPathlets
         del TrajBestDecomposition
 
         gc.collect()
 
-        start = time.time()
-
         self.MinimizePathletLearningResults()
-
-        end = time.time()
-        print("RunTime MinimizeResults:",(end - start))
 
         del self.PathletResults
 
-        print(len(self.Pathlets))
-
 
     def FindAllPossiblePathlets(self, trajectories) :
-        print("STARTFINDPOSSIBLEPATHLETS")
         AllPossiblePathlets = []
         TpIndexesNeededForPathletLearning = dict()
 
@@ -81,7 +62,6 @@ class PathletLearningScalableDynamicClass :
 
             trajCounter = trajCounter + 1
 
-        print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TpIndexesNeededForPathletLearning,seen
 
     def FindFStarForAllSubTrajsAndReturnTrajDec(self,traj,TpIndexesNeededForPathletLearning) :
@@ -124,9 +104,6 @@ class PathletLearningScalableDynamicClass :
 
                 return Value
 
-        print("\nSTARTING RECURSION")
-        start = time.time()
-
         for i in range(len(traj) + 1):
                 for j in range(i + 1, len(traj) + 1):
 
@@ -135,9 +112,6 @@ class PathletLearningScalableDynamicClass :
                     minVal = RecursiveCalculationOfFStar(i,j-1)
 
                     ValuesdictSubTraj[tuple(subtraj)] = minVal
-        print("DONE WITH RECURSIVE")
-        end = time.time()
-        print("RunTime Recursion:",(end - start))
 
         
         def BacktrackingToFindBestDecomposition(Path) :
@@ -199,26 +173,15 @@ class PathletLearningScalableDynamicClass :
             BestpathDec.append(tuple(Path))
             if right :
                 for t in right :
-                    if type(t) is not tuple  :
+                    if type(t) is not tuple :
                         BestpathDec.append((t,))
                     else :
                         BestpathDec.append(t)
 
             return BestpathDec
-        
-        print("\nFindingBestDecompositionofT")
-        start = time.time()
 
-        BestDecTraj = BacktrackingToFindBestDecomposition(traj)
-        
-        print("DONE WITH BestDecompositionBacktrack")
 
-        print("Best Decomposition : ",BestDecTraj)
-        
-        #BestDecTraj = BacktrackingToFindBestDecomposition()
-        end = time.time()
-        print("RunTime BestDecomposition:",(end - start))
-        print(BestDecTraj)             
+        BestDecTraj = BacktrackingToFindBestDecomposition(traj)          
 
         return BestDecTraj
 
