@@ -3,47 +3,35 @@ import gc
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
         self.NumOfTrajs = len(trajectories)
-        self.Pathlets,TpIndexesNeededForPathletLearning,PositionOfPathlets = self.FindAllPossiblePathlets(trajectories)
-
-        TrajBestDecomposition = []
+        num_of_Pathlets,TpCounterNeededForPathletLearning = self.FindAllPossiblePathlets(trajectories)
 
         #Use for faster execution of Recursion
         self.FoundValuesOfSubPaths = dict()
-        self.seen = set()
 
         for i in range(len(trajectories)) :
-            TrajBestDecomposition.append(self.FindFStarForAllSubTrajsAndReturnTrajDec(trajectories[i],TpIndexesNeededForPathletLearning))
+            self.FindFStarForAllSubTrajs(trajectories[i],TpCounterNeededForPathletLearning)
+
+        del TpCounterNeededForPathletLearning
+        gc.collect()
+
+        self.Pathlets = []
+        self.TrajsResults = []
+        self.PathletIndexes = dict()
+
+        for i in range(len(trajectories)) :
+            trajBestDecomposition = self.ReturnTrajDecomposition(trajectories[i])
+            self.TrajsResults.append(self.TurnTrajDecompositionToIndexesWithPathletDir(trajBestDecomposition))
 
         del self.FoundValuesOfSubPaths
-        del self.seen
-        del TpIndexesNeededForPathletLearning
+        del self.PathletIndexes
 
         gc.collect()
-
-        self.TrajsResults = []#Xtp
-        self.PathletResults = [0]*len(self.Pathlets)#Xp
-
-        for trajDec in TrajBestDecomposition :
-            self.TrajsResults.append(self.TurnTrajDecompositionToXtp(trajDec,PositionOfPathlets))
-
-        del PositionOfPathlets
-        del TrajBestDecomposition
-
-        gc.collect()
-
-        self.MinimizePathletLearningResults()
-
-        del self.PathletResults
 
 
     def FindAllPossiblePathlets(self, trajectories) :
-        AllPossiblePathlets = []
-        TpIndexesNeededForPathletLearning = dict()
-
-        seenSet = set()
-        seen = dict()
-
-        trajCounter = 0
+        NumOfPathlets = 0
+        TpCounterNeededForPathletLearning = dict()
+        
         for traj in trajectories :
 
             for i in range(len(traj) + 1): 
@@ -52,28 +40,23 @@ class PathletLearningScalableDynamicClass :
 
                     sub = tuple(traj[i:j])
 
-                    if (sub not in seenSet) :
-                        TpIndexesNeededForPathletLearning[sub] = {trajCounter}
-                        seen[sub] = len(AllPossiblePathlets)
-                        AllPossiblePathlets.append(sub)
-                        seenSet.add(sub)
+                    if (sub not in TpCounterNeededForPathletLearning) :
+                        TpCounterNeededForPathletLearning[sub] = 1
+                        NumOfPathlets + NumOfPathlets + 1
                     else :
-                        TpIndexesNeededForPathletLearning[sub].add(trajCounter)
+                        TpCounterNeededForPathletLearning[sub] = TpCounterNeededForPathletLearning[sub] + 1
 
-            trajCounter = trajCounter + 1
+        return NumOfPathlets, TpCounterNeededForPathletLearning
 
-        return AllPossiblePathlets, TpIndexesNeededForPathletLearning,seen
-
-    def FindFStarForAllSubTrajsAndReturnTrajDec(self,traj,TpIndexesNeededForPathletLearning) :
+    
+    def FindFStarForAllSubTrajs(self,traj,TpCounterNeededForPathletLearning) :
         l = 1
-        ValuesdictSubTraj = dict()
 
-        
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1:
                 sub = tuple(traj[i:j+1])
 
-                if sub in self.seen :
+                if sub in self.FoundValuesOfSubPaths :
                     return self.FoundValuesOfSubPaths[sub]
 
                 minValue = float('inf')
@@ -84,23 +67,23 @@ class PathletLearningScalableDynamicClass :
                     if ReturnValue < minValue :
                         minValue = ReturnValue
 
-                self.seen.add(sub)
                 self.FoundValuesOfSubPaths[sub] = minValue
+                del TpCounterNeededForPathletLearning[sub]
 
                 return minValue
             else :
                 sub = tuple(traj[i:i+2])
 
-                if sub in self.seen :
+                if sub in self.FoundValuesOfSubPaths :
                     return self.FoundValuesOfSubPaths[sub]
                 
                 
-                TpResult = TpIndexesNeededForPathletLearning[sub]
+                TpResult = TpCounterNeededForPathletLearning[sub]
                 l = 0.0001
-                Value = l + 1.0/(len(TpResult))
+                Value = l + 1.0/TpResult
 
-                self.seen.add(sub)
                 self.FoundValuesOfSubPaths[sub] = Value
+                del TpCounterNeededForPathletLearning[sub]
 
                 return Value
 
@@ -111,13 +94,15 @@ class PathletLearningScalableDynamicClass :
 
                     minVal = RecursiveCalculationOfFStar(i,j-1)
 
-                    ValuesdictSubTraj[tuple(subtraj)] = minVal
+                    self.FoundValuesOfSubPaths[tuple(subtraj)] = minVal
 
-        
+
+    def ReturnTrajDecomposition(self,traj) :
+    
         def BacktrackingToFindBestDecomposition(Path) :
             if len(Path) == 2 :
-                Value1 = ValuesdictSubTraj[(Path[0],)]
-                Value2 = ValuesdictSubTraj[(Path[1],)]
+                Value1 = self.FoundValuesOfSubPaths[(Path[0],)]
+                Value2 = self.FoundValuesOfSubPaths[(Path[1],)]
 
                 if Value1 == Value2 :
                     return [(Path[0],Path[1])]
@@ -136,7 +121,7 @@ class PathletLearningScalableDynamicClass :
                 for i in range(len(Path) - counter + 1) :
                     subpath = Path[i:i+counter]
 
-                    Value = ValuesdictSubTraj[tuple(subpath)]
+                    Value = self.FoundValuesOfSubPaths[tuple(subpath)]
                     if MinValue == Value :
                         continue
                     elif Value < MinValue and MinValue == float('inf') :
@@ -186,43 +171,20 @@ class PathletLearningScalableDynamicClass :
         return BestDecTraj
 
 
-
-    def TurnTrajDecompositionToXtp(self, trajDec,PositionOfPathlets) :
+    def TurnTrajDecompositionToIndexesWithPathletDir(self, trajDec) :
         Xtp = [0]*len(trajDec)
 
         for i in range(len(trajDec)) :
-            index = PositionOfPathlets[trajDec[i]]
+            index = -1
+            if trajDec[i] not in self.PathletIndexes :
+                index = len(self.PathletIndexes)
+                self.PathletIndexes[trajDec[i]] = index
+                self.Pathlets.append(trajDec[i])
+            else :
+                index = self.PathletIndexes[trajDec[i]]
             Xtp[i] = index
-            self.PathletResults[index] = 1
 
         return Xtp
-        
-    def MinimizePathletLearningResults(self) :
-        #----------------------------------------------
-        #Parakatw meiwnw to megethos twn dedomenwn mas
-        indexes = []
-        indexes1 = []
-        DictionaryForIndexReduction = dict()
-        counter = 0
-
-        NewPathlets = []
-        
-        for i in range(len(self.PathletResults)) :
-            if self.PathletResults[i] == 0 :
-                indexes.append(i)
-                counter = counter + 1
-            else :
-                indexes1.append(i)
-                DictionaryForIndexReduction[i] = counter
-                NewPathlets.append(self.Pathlets[i])
-
-        self.Pathlets = NewPathlets
-
-        for i in range(len(self.TrajsResults)) :
-            for f in range(len(self.TrajsResults[i])) :
-                index = self.TrajsResults[i][f]
-                self.TrajsResults[i][f] = self.TrajsResults[i][f] - DictionaryForIndexReduction[index]
-
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []

@@ -4,6 +4,7 @@ from PathletLearningScalableClass import *
 from PathletLearningScalableDynamicClass import *
 import pandas as pd
 from ast import literal_eval
+import gc
 
 start = time.time()
 """
@@ -34,6 +35,9 @@ for y in trainSet['barefootSegmentsSequence'] :
     x = x + 1
     if x == 100 :
         break
+
+del trainSet
+gc.collect()
 
 plclass = PathletLearningScalableDynamicClass(trajectories)
 
