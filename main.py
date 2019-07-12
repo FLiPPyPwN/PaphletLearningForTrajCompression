@@ -33,7 +33,7 @@ for y in trainSet['barefootSegmentsSequence'] :
     trajectories.append(y)
 
     x = x + 1
-    if x == 1000 :
+    if x == 100 :
         break
 
 del trainSet

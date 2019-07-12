@@ -1,19 +1,23 @@
 import time
 import gc
+
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
         TpCounterNeededForPathletLearning = self.FindTpCounterOfPathlets(trajectories)
 
-        self.Pathlets = []
+        self.Pathlets = dict()
         self.TrajsResults = []
 
         for i in range(len(trajectories)) :
             FoundValuesOfSubPaths = self.FindFStarForAllSubTrajs(trajectories[i],TpCounterNeededForPathletLearning)
             self.TrajsResults.append(self.ReturnTrajResultAfterFindingDecomposition(trajectories[i],FoundValuesOfSubPaths))
 
+        self.Pathlets = list(self.Pathlets) #lista mono me ta keys tou dict #python3.6+ einai ordered opws xreiazomaste !!!
+
         del TpCounterNeededForPathletLearning
 
         gc.collect()
+        
 
 
     def FindTpCounterOfPathlets(self, trajectories) :
@@ -154,14 +158,11 @@ class PathletLearningScalableDynamicClass :
 
     def PathToPathletIndex(self,path) :
         index = -1
-        for i in range(len(self.Pathlets)) :
-            if path == self.Pathlets[i] :
-                index = i
-                break
-
-        if index == -1 :
+        if path not in self.Pathlets :
             index = len(self.Pathlets)
-            self.Pathlets.append(path)
+            self.Pathlets[path] = index
+        else :
+            index = self.Pathlets[path]
 
         return index
 
@@ -183,7 +184,7 @@ class PathletLearningScalableDynamicClass :
         return RealTrajs
 
     def ReturnSpecificTrajectoryByIndex(self, index) :
-        if index > len(self.TrajsResults) - 1 or index < 0:
-            print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
+        if index > len(self.Pathlets) - 1 or index < 0:
+            print("There are",len(self.Pathlets),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
