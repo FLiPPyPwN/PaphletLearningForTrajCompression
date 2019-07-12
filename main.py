@@ -33,7 +33,7 @@ for y in trainSet['barefootSegmentsSequence'] :
     trajectories.append(y)
 
     x = x + 1
-    if x == 100 :
+    if x == 1000 :
         break
 
 del trainSet
@@ -41,7 +41,7 @@ gc.collect()
 
 plclass = PathletLearningScalableDynamicClass(trajectories)
 
-AllTrajs = plclass.ReturnAllTrajsInAList()
+AllTrajs = plclass.ReturnAllTrajectoriessInAList()
 
 flag = False
 for i in range(len(AllTrajs)) :
@@ -51,7 +51,36 @@ for i in range(len(AllTrajs)) :
 if flag :
         print("trajectories not the same")
 
-print(len(plclass.Pathlets))
+
+"""
+Results = {'Pathlets' : plclass.Pathlets}
+
+df = pd.DataFrame(Results, columns= ['Pathlets'])
+
+print(df)
+
+df.to_csv (r'Pathlets.csv', index = None, header=True)
+
+
+Results = {'TrajectoriesResults' : plclass.TrajsResults}
+
+df = pd.DataFrame(Results, columns= ['TrajectoriesResults'])
+
+print(df)
+
+df.to_csv (r'TrajectoryResults.csv', index = None, header=True)
+
+
+
+data = pd.read_csv (r'Pathlets.csv')
+
+ReadPathlets = data['Pathlets'].tolist()
+
+print(ReadPathlets)
+print(plclass.Pathlets)
+"""
+
+
 
 
 end = time.time()

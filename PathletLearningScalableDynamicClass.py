@@ -2,27 +2,16 @@ import time
 import gc
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
-        self.NumOfTrajs = len(trajectories)
         TpCounterNeededForPathletLearning = self.FindTpCounterOfPathlets(trajectories)
-
-        #Use for faster execution of Recursion
-        self.FoundValuesOfSubPaths = dict()
-
-        for i in range(len(trajectories)) :
-            self.FindFStarForAllSubTrajs(trajectories[i],TpCounterNeededForPathletLearning)
-
-        del TpCounterNeededForPathletLearning
-        gc.collect()
 
         self.Pathlets = []
         self.TrajsResults = []
-        self.PathletIndexes = dict()
 
         for i in range(len(trajectories)) :
-            self.TrajsResults.append(self.ReturnTrajResultAfterFindingDecomposition(trajectories[i]))
+            FoundValuesOfSubPaths = self.FindFStarForAllSubTrajs(trajectories[i],TpCounterNeededForPathletLearning)
+            self.TrajsResults.append(self.ReturnTrajResultAfterFindingDecomposition(trajectories[i],FoundValuesOfSubPaths))
 
-        del self.FoundValuesOfSubPaths
-        del self.PathletIndexes
+        del TpCounterNeededForPathletLearning
 
         gc.collect()
 
@@ -50,12 +39,14 @@ class PathletLearningScalableDynamicClass :
     
     def FindFStarForAllSubTrajs(self,traj,TpCounterNeededForPathletLearning) :
 
+        FoundValuesOfSubPaths = dict()
+
         def RecursiveCalculationOfFStar(i,j) :
             if i < j-1:
                 sub = tuple(traj[i:j+1])
 
-                if sub in self.FoundValuesOfSubPaths :
-                    return self.FoundValuesOfSubPaths[sub]
+                if sub in FoundValuesOfSubPaths :
+                    return FoundValuesOfSubPaths[sub]
 
                 minValue = float('inf')
                 for k in range(i+1,j) :
@@ -65,21 +56,20 @@ class PathletLearningScalableDynamicClass :
                     if ReturnValue < minValue :
                         minValue = ReturnValue
 
-                self.FoundValuesOfSubPaths[sub] = minValue
+                FoundValuesOfSubPaths[sub] = minValue
 
                 return minValue
             else :
                 sub = tuple(traj[i:i+2])
 
-                if sub in self.FoundValuesOfSubPaths :
-                    return self.FoundValuesOfSubPaths[sub]
+                if sub in FoundValuesOfSubPaths :
+                    return FoundValuesOfSubPaths[sub]
                 
                 TpResult = TpCounterNeededForPathletLearning[sub]
                 l = 1
                 Value = l + 1.0/TpResult
 
-                self.FoundValuesOfSubPaths[sub] = Value
-                del TpCounterNeededForPathletLearning[sub]
+                FoundValuesOfSubPaths[sub] = Value
 
                 return Value
 
@@ -88,15 +78,17 @@ class PathletLearningScalableDynamicClass :
 
                     subtraj = traj[i:j]
 
-                    self.FoundValuesOfSubPaths[tuple(subtraj)] = RecursiveCalculationOfFStar(i,j-1)
+                    FoundValuesOfSubPaths[tuple(subtraj)] = RecursiveCalculationOfFStar(i,j-1)
+
+        return FoundValuesOfSubPaths
 
 
-    def ReturnTrajResultAfterFindingDecomposition(self,traj) :
+    def ReturnTrajResultAfterFindingDecomposition(self,traj,FoundValuesOfSubPaths) :
     
         def BacktrackingToFindBestDecomposition(Path) :
             if len(Path) == 2 :
-                Value1 = self.FoundValuesOfSubPaths[(Path[0],)]
-                Value2 = self.FoundValuesOfSubPaths[(Path[1],)]
+                Value1 = FoundValuesOfSubPaths[(Path[0],)]
+                Value2 = FoundValuesOfSubPaths[(Path[1],)]
 
                 if Value1 == Value2 :
                     return [self.PathToPathletIndex((Path[0],Path[1]))]
@@ -119,7 +111,7 @@ class PathletLearningScalableDynamicClass :
                 for i in range(len(Path) - counter + 1) :
                     subpath = Path[i:i+counter]
 
-                    Value = self.FoundValuesOfSubPaths[tuple(subpath)]
+                    Value = FoundValuesOfSubPaths[tuple(subpath)]
                     if MinValue == Value :
                         continue
                     elif Value < MinValue and MinValue == float('inf') :
@@ -162,12 +154,14 @@ class PathletLearningScalableDynamicClass :
 
     def PathToPathletIndex(self,path) :
         index = -1
-        if path not in self.PathletIndexes :
-            index = len(self.PathletIndexes)
-            self.PathletIndexes[path] = index
+        for i in range(len(self.Pathlets)) :
+            if path == self.Pathlets[i] :
+                index = i
+                break
+
+        if index == -1 :
+            index = len(self.Pathlets)
             self.Pathlets.append(path)
-        else :
-            index = self.PathletIndexes[path]
 
         return index
 
@@ -181,7 +175,7 @@ class PathletLearningScalableDynamicClass :
 
         return RealTraj
 
-    def ReturnAllTrajsInAList(self) :
+    def ReturnAllTrajectoriessInAList(self) :
         RealTrajs = []
         for i in range(len(self.TrajsResults)) :
             RealTrajs.append(self.ReturnRealTraj(self.TrajsResults[i]))
@@ -189,7 +183,7 @@ class PathletLearningScalableDynamicClass :
         return RealTrajs
 
     def ReturnSpecificTrajectoryByIndex(self, index) :
-        if index > self.NumOfTrajs - 1 or index < 0:
-            print("There are",self.NumOfTrajs,"trajectories but you asked for the",index)
+        if index > len(self.TrajsResults) - 1 or index < 0:
+            print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
