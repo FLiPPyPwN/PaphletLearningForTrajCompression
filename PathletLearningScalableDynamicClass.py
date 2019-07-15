@@ -3,9 +3,15 @@ import gc
 import multiprocessing
 from functools import partial
 import os
+import pickle
 
 class PathletLearningScalableDynamicClass :
-    def __init__(self, trajectories) :
+    def __init__(self, trajectories=[]) :
+        if not trajectories :
+            self.TrajsResults = []
+            self.Pathlets = []
+            return
+
         self.TrajsResults = []
 
         m = multiprocessing.Manager()
@@ -14,7 +20,8 @@ class PathletLearningScalableDynamicClass :
 
         cpu_count = multiprocessing.cpu_count()
         p = multiprocessing.Pool(cpu_count)
-        #8 -- 1211sec
+        #8 -- 1211sec -- 20000 trajectories
+        #8 -- 2454sec -- 40000 trajectories
 
         self.ListForClean = m.list()
         self.ListForClean.append(time.time())
@@ -25,6 +32,8 @@ class PathletLearningScalableDynamicClass :
         p.map(self.FindTpCounterOfPathlets,list(trajectories[i:i+int(len(trajectories)/cpu_count)] for i in range(0,len(trajectories),int(len(trajectories)/cpu_count))))
 
         self.TpCounterNeededForPathletLearning = dict(self.TpCounterNeededForPathletLearning)
+
+        print("FoundTpCounters")
 
         gc.collect()
 
@@ -50,7 +59,7 @@ class PathletLearningScalableDynamicClass :
 
         del FoundValuesOfSubPaths
 
-        if time.time() - self.ListForClean[0] > 150.0 :
+        if time.time() - self.ListForClean[0] > 180.0 :
             proc = os.getpid()
             if  proc not in self.SetForProcs :
                 if self.ListForClean[1] == 1 :

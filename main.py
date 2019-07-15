@@ -6,9 +6,8 @@ import pandas as pd
 from ast import literal_eval
 import gc
 
-
 def main() :
-        start = time.time()
+        
         """
         #Thewroume oti Grid 4x4
         trajectories=[]
@@ -24,6 +23,7 @@ def main() :
 
         """
 
+        num_of_trajectories = 100
         trainSet = pd.read_csv(
                 'newTrips.csv', # replace with the correct path
                 converters={"barefootSegmentsSequence": literal_eval},
@@ -35,13 +35,18 @@ def main() :
                 trajectories.append(y)
 
                 x = x + 1
-                if x == 100 :
+                if x == num_of_trajectories :
                         break
 
         del trainSet
         gc.collect()
 
+        start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
+
         plclass = PathletLearningScalableDynamicClass(trajectories)
+
+        end = time.time()
+        print("\nRunTime:",(end - start))
 
         AllTrajs = plclass.ReturnAllTrajectoriessInAList()
 
@@ -54,39 +59,35 @@ def main() :
                 print("trajectories not the same")
 
 
-        """
-        Results = {'Pathlets' : plclass.Pathlets}
+        #Writing - Reading Results from files
 
-        df = pd.DataFrame(Results, columns= ['Pathlets'])
+        PathletFileName = "Pathlets_"+str(num_of_trajectories)+"_l1"
+        with open(PathletFileName, 'wb') as f:
+                pickle.dump(plclass.Pathlets, f)
 
-        print(df)
+        TrajsResultsFileName = "TrajsResults_"+str(num_of_trajectories)+"_l1"
+        with open(TrajsResultsFileName, 'wb') as f:
+                pickle.dump(plclass.TrajsResults, f)
 
-        df.to_csv (r'Pathlets.csv', index = None, header=True)
+        del AllTrajs
+        plclassTemp = PathletLearningScalableDynamicClass()
 
+        with open(PathletFileName, 'rb') as f:
+                plclassTemp.Pathlets = pickle.load(f)
 
-        Results = {'TrajectoriesResults' : plclass.TrajsResults}
+        with open(TrajsResultsFileName, 'rb') as f:
+                plclassTemp.TrajsResults = pickle.load(f)
 
-        df = pd.DataFrame(Results, columns= ['TrajectoriesResults'])
+        AllTrajs = plclassTemp.ReturnAllTrajectoriessInAList()
 
-        print(df)
+        flag = False
+        for i in range(len(AllTrajs)) :
+                if not(set(AllTrajs[i]) == set(trajectories[i])) :
+                        flag = True
 
-        df.to_csv (r'TrajectoryResults.csv', index = None, header=True)
+        if flag :
+                print("trajectories not the same")
 
-
-
-        data = pd.read_csv (r'Pathlets.csv')
-
-        ReadPathlets = data['Pathlets'].tolist()
-
-        print(ReadPathlets)
-        print(plclass.Pathlets)
-        """
-
-
-
-
-        end = time.time()
-        print("\nRunTime:",(end - start))
 
 if __name__ == '__main__':
     main()
