@@ -6,82 +6,87 @@ import pandas as pd
 from ast import literal_eval
 import gc
 
-start = time.time()
-"""
-#Thewroume oti Grid 4x4
-trajectories=[]
 
-trajectories.append([0,1,2,3,4,5,6])
-trajectories.append([0,1,2,3,4])
-trajectories.append([3,4,5,6])
+def main() :
+        start = time.time()
+        """
+        #Thewroume oti Grid 4x4
+        trajectories=[]
 
-plclass = PathletLearningScalableDynamicClass(trajectories)
-print("\n\n\n\n")
-print(plclass.Pathlets,"   ",plclass.TrajsResults)
-print("PrintingAllTrajectories\n",plclass.ReturnAllTrajsInAList())
+        trajectories.append([0,1,2,3,4,5,6])
+        trajectories.append([0,1,2,3,4])
+        trajectories.append([3,4,5,6])
 
-"""
+        plclass = PathletLearningScalableDynamicClass(trajectories)
+        print("\n\n\n\n")
+        print(plclass.Pathlets,"   ",plclass.TrajsResults)
+        print("PrintingAllTrajectories\n",plclass.ReturnAllTrajsInAList())
 
-trainSet = pd.read_csv(
-        'newTrips.csv', # replace with the correct path
-        converters={"barefootSegmentsSequence": literal_eval},
-        index_col='newTripID')
+        """
 
-trajectories = []
-x = 0
-for y in trainSet['barefootSegmentsSequence'] :
-    trajectories.append(y)
+        trainSet = pd.read_csv(
+                'newTrips.csv', # replace with the correct path
+                converters={"barefootSegmentsSequence": literal_eval},
+                index_col='newTripID')
 
-    x = x + 1
-    if x == 100 :
-        break
+        trajectories = []
+        x = 0
+        for y in trainSet['barefootSegmentsSequence'] :
+                trajectories.append(y)
 
-del trainSet
-gc.collect()
+                x = x + 1
+                if x == 100 :
+                        break
 
-plclass = PathletLearningScalableDynamicClass(trajectories)
+        del trainSet
+        gc.collect()
 
-AllTrajs = plclass.ReturnAllTrajectoriessInAList()
+        plclass = PathletLearningScalableDynamicClass(trajectories)
 
-flag = False
-for i in range(len(AllTrajs)) :
-        if not(set(AllTrajs[i]) == set(trajectories[i])) :
-                flag = True
+        AllTrajs = plclass.ReturnAllTrajectoriessInAList()
 
-if flag :
-        print("trajectories not the same")
+        flag = False
+        for i in range(len(AllTrajs)) :
+                if not(set(AllTrajs[i]) == set(trajectories[i])) :
+                        flag = True
 
-
-"""
-Results = {'Pathlets' : plclass.Pathlets}
-
-df = pd.DataFrame(Results, columns= ['Pathlets'])
-
-print(df)
-
-df.to_csv (r'Pathlets.csv', index = None, header=True)
+        if flag :
+                print("trajectories not the same")
 
 
-Results = {'TrajectoriesResults' : plclass.TrajsResults}
+        """
+        Results = {'Pathlets' : plclass.Pathlets}
 
-df = pd.DataFrame(Results, columns= ['TrajectoriesResults'])
+        df = pd.DataFrame(Results, columns= ['Pathlets'])
 
-print(df)
+        print(df)
 
-df.to_csv (r'TrajectoryResults.csv', index = None, header=True)
+        df.to_csv (r'Pathlets.csv', index = None, header=True)
 
 
+        Results = {'TrajectoriesResults' : plclass.TrajsResults}
 
-data = pd.read_csv (r'Pathlets.csv')
+        df = pd.DataFrame(Results, columns= ['TrajectoriesResults'])
 
-ReadPathlets = data['Pathlets'].tolist()
+        print(df)
 
-print(ReadPathlets)
-print(plclass.Pathlets)
-"""
+        df.to_csv (r'TrajectoryResults.csv', index = None, header=True)
 
 
 
+        data = pd.read_csv (r'Pathlets.csv')
 
-end = time.time()
-print("\nRunTime:",(end - start))
+        ReadPathlets = data['Pathlets'].tolist()
+
+        print(ReadPathlets)
+        print(plclass.Pathlets)
+        """
+
+
+
+
+        end = time.time()
+        print("\nRunTime:",(end - start))
+
+if __name__ == '__main__':
+    main()

@@ -1,47 +1,98 @@
 import time
 import gc
+import multiprocessing
+from functools import partial
+import os
 
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories) :
-        TpCounterNeededForPathletLearning = self.FindTpCounterOfPathlets(trajectories)
-
-        self.Pathlets = dict()
         self.TrajsResults = []
 
-        for i in range(len(trajectories)) :
-            FoundValuesOfSubPaths = self.FindFStarForAllSubTrajs(trajectories[i],TpCounterNeededForPathletLearning)
-            self.TrajsResults.append(self.ReturnTrajResultAfterFindingDecomposition(trajectories[i],FoundValuesOfSubPaths))
+        m = multiprocessing.Manager()
+        
+        self.l = m.Lock()
+
+        cpu_count = multiprocessing.cpu_count()
+        p = multiprocessing.Pool(cpu_count)
+        #8 -- 1211sec
+
+        self.ListForClean = m.list()
+        self.ListForClean.append(time.time())
+        self.ListForClean.append(cpu_count)
+        self.SetForProcs = m.dict()
+
+        self.TpCounterNeededForPathletLearning = m.dict()
+        p.map(self.FindTpCounterOfPathlets,list(trajectories[i:i+int(len(trajectories)/cpu_count)] for i in range(0,len(trajectories),int(len(trajectories)/cpu_count))))
+
+        self.TpCounterNeededForPathletLearning = dict(self.TpCounterNeededForPathletLearning)
+
+        gc.collect()
+
+        self.Pathlets = m.dict()
+        self.TrajsResults = list(p.map(self.FindFStarAndTrajRes,trajectories))
+
+        p.close()
 
         self.Pathlets = list(self.Pathlets) #lista mono me ta keys tou dict #python3.6+ einai ordered opws xreiazomaste !!!
 
-        del TpCounterNeededForPathletLearning
+        del self.TpCounterNeededForPathletLearning
+        del m
+        del p
+        del self.ListForClean
+        del self.SetForProcs
 
         gc.collect()
-        
 
+    def FindFStarAndTrajRes(self,traj) :
+        FoundValuesOfSubPaths = self.FindFStarForAllSubTrajs(traj)
+        TrajResult = self.ReturnTrajResultAfterFindingDecomposition(traj,FoundValuesOfSubPaths)
+
+
+        del FoundValuesOfSubPaths
+
+        if time.time() - self.ListForClean[0] > 150.0 :
+            proc = os.getpid()
+            if  proc not in self.SetForProcs :
+                if self.ListForClean[1] == 1 :
+                    self.ListForClean[1] = multiprocessing.cpu_count()
+                    self.SetForProcs.clear()
+                    self.ListForClean[0] = time.time()
+                else :
+                    self.ListForClean[1] = self.ListForClean[1] - 1
+                    self.SetForProcs[proc] = 0
+
+                gc.collect()
+                
+
+        return TrajResult
+        
 
     def FindTpCounterOfPathlets(self, trajectories) :
-        NumOfPathlets = 0
-        TpCounterNeededForPathletLearning = dict()
-        
         for traj in trajectories :
-
             for i in range(len(traj) + 1): 
 
                 for j in range(i + 1, i + 3): 
 
                     sub = tuple(traj[i:j])
 
-                    if (sub not in TpCounterNeededForPathletLearning) :
-                        TpCounterNeededForPathletLearning[sub] = 1
-                        NumOfPathlets + NumOfPathlets + 1
-                    else :
-                        TpCounterNeededForPathletLearning[sub] = TpCounterNeededForPathletLearning[sub] + 1
+                    if (sub not in self.TpCounterNeededForPathletLearning) :
+                        self.l.acquire()
 
-        return TpCounterNeededForPathletLearning
+                        if (sub not in self.TpCounterNeededForPathletLearning) :
+                            self.TpCounterNeededForPathletLearning[sub] = 1
+                        else :
+                            self.TpCounterNeededForPathletLearning[sub] = self.TpCounterNeededForPathletLearning[sub] + 1
+
+                        self.l.release()
+                    else :
+                        self.TpCounterNeededForPathletLearning[sub] = self.TpCounterNeededForPathletLearning[sub] + 1
+
+        gc.collect()
+
+                    
 
     
-    def FindFStarForAllSubTrajs(self,traj,TpCounterNeededForPathletLearning) :
+    def FindFStarForAllSubTrajs(self,traj) :
 
         FoundValuesOfSubPaths = dict()
 
@@ -69,7 +120,7 @@ class PathletLearningScalableDynamicClass :
                 if sub in FoundValuesOfSubPaths :
                     return FoundValuesOfSubPaths[sub]
                 
-                TpResult = TpCounterNeededForPathletLearning[sub]
+                TpResult = self.TpCounterNeededForPathletLearning[sub]
                 l = 1
                 Value = l + 1.0/TpResult
 
@@ -158,9 +209,17 @@ class PathletLearningScalableDynamicClass :
 
     def PathToPathletIndex(self,path) :
         index = -1
+
         if path not in self.Pathlets :
-            index = len(self.Pathlets)
-            self.Pathlets[path] = index
+            self.l.acquire()
+
+            if path not in self.Pathlets :
+                index = len(self.Pathlets)
+                self.Pathlets[path] = index
+            else :
+                index = self.Pathlets[path]
+
+            self.l.release()
         else :
             index = self.Pathlets[path]
 
