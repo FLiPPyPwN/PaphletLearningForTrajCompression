@@ -19,6 +19,8 @@ class PathletLearningScalableDynamicClass :
         self.l = m.Lock()
 
         cpu_count = multiprocessing.cpu_count()
+        if len(trajectories) < cpu_count :
+            cpu_count = len(trajectories)
         p = multiprocessing.Pool(cpu_count)
         #8 -- 1211sec -- 20000 trajectories
         #8 -- 2454sec -- 40000 trajectories
@@ -244,7 +246,7 @@ class PathletLearningScalableDynamicClass :
 
         return RealTraj
 
-    def ReturnAllTrajectoriessInAList(self) :
+    def ReturnAllTrajectoriesInAList(self) :
         RealTrajs = []
         for i in range(len(self.TrajsResults)) :
             RealTrajs.append(self.ReturnRealTraj(self.TrajsResults[i]))

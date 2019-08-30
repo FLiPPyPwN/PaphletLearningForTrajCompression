@@ -1,13 +1,19 @@
 from pulp import *
+import gc
+import numpy as np
+
 class PathletLearningClass :
     def __init__(self, trajectories) :
-        self.NumOfTrajs = len(trajectories)
 
         self.Pathlets, IndexesForConstraints= self.FindAllPossiblePathlets(trajectories)
-        print(len(self.Pathlets))
+
+        gc.collect()
 
         PathletResults,self.TrajsResults = self.SolvePathletLearningLinearly(trajectories, IndexesForConstraints)
         #print(IndexesForConstraints)
+
+        gc.collect()
+        
         self.MinimizePathletLearningResults(PathletResults)
 
         #print("\nAAA\n",self.Pathlets,self.TrajsResults)
@@ -18,7 +24,6 @@ class PathletLearningClass :
         AllPossiblePathlets = []
         TrajsIndexesNeededForPathletLearning = []
 
-        seenSet = set()
         seen = dict()
 
         for traj in trajectories :
@@ -32,13 +37,12 @@ class PathletLearningClass :
 
                     sub = tuple(traj[i:j])
                     #print(sub)
-                    if (sub not in seenSet) :
+                    if (sub not in seen) :
                         for k in range(i,j) :
                             trajIndexTemp[k].append(len(AllPossiblePathlets))
 
                         seen[sub] = len(AllPossiblePathlets)
                         AllPossiblePathlets.append(sub)
-                        seenSet.add(sub)
                     else :
                         #print("FINDINDEX")
                         index = seen[sub]
@@ -48,7 +52,7 @@ class PathletLearningClass :
 
             #print(trajIndexTemp)
             TrajsIndexesNeededForPathletLearning.append(trajIndexTemp)
-           #print("FINISHED A TRAJECTORY")
+            #print("FINISHED A TRAJECTORY")
      
         print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TrajsIndexesNeededForPathletLearning
@@ -88,6 +92,7 @@ class PathletLearningClass :
 
         print("2nd Set Of Constraints")
 
+
         #print(IndexesForConstraints)
         for i in range(len(trajectories)) :
 
@@ -109,7 +114,7 @@ class PathletLearningClass :
         for i in range(len(Xp)) :
             temp += Xp[i]
 
-        l = 100; #lamda
+        l = 0.0001; #lamda
         for i in range(len(Xtp)) :
             for j in range(len(Xtp[i])) :
                 temp += l*Xtp[i][j]
@@ -117,6 +122,7 @@ class PathletLearningClass :
         problem += temp
         #print(problem)
         print("SolvingStarts!")
+
         problem.solve() #!!!
 
         PathletResults = []
@@ -144,13 +150,14 @@ class PathletLearningClass :
 
         #print("\nIndexes to Remove: ",indexes)
 
-        k = 0
-        for i in indexes :
-            del self.Pathlets[i - k]
-            del PathletResults[i - k]
-            for traj in self.TrajsResults :
-                del traj[i - k]
-            k = k + 1
+        self.Pathlets = np.array(self.Pathlets)
+        PathletResults = np.array(PathletResults)
+        self.TrajsResults = np.array(self.TrajsResults)
+
+        self.Pathlets = np.delete(self.Pathlets, indexes)
+        PathletResults = np.delete(PathletResults, indexes)
+        self.TrajsResults = np.delete(self.TrajsResults, indexes, 1)
+
 
         NewTrajsResults = []
         for traj in self.TrajsResults :
@@ -170,22 +177,6 @@ class PathletLearningClass :
         self.TrajsResults = NewTrajsResults
 
 
-    def ReturnPartRealTraj(self, subtraj1,subtraj2) :
-        if subtraj1 == [] :
-            return subtraj2
-        (x1,y1) = subtraj1[-1]
-        (x2,y2) = subtraj2[0]
-        dist1 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        (x1,y1) = subtraj1[0]
-        (x2,y2) = subtraj2[-1]
-        dist2 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        if dist1 < dist2 :
-            return subtraj1 + subtraj2
-        else :
-            return subtraj2 + subtraj1
-
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
         TotalTimes = 0
@@ -193,13 +184,13 @@ class PathletLearningClass :
             (Value,times) = TrajResult[i]
             if Value == 1 :
                 for j in range(times) :
-                    RealTraj = self.ReturnPartRealTraj(RealTraj,self.Pathlets[TotalTimes + j])
+                    RealTraj = RealTraj + list(self.Pathlets[TotalTimes + j])
 
             TotalTimes = TotalTimes + times
 
         return RealTraj
 
-    def ReturnAllTrajsInAList(self) :
+    def ReturnAllTrajectoriesInAList(self) :
         RealTrajs = []
         for i in range(len(self.TrajsResults)) :
             RealTrajs.append(self.ReturnRealTraj(self.TrajsResults[i]))
@@ -207,7 +198,7 @@ class PathletLearningClass :
         return RealTrajs
 
     def ReturnSpecificTrajectoryByIndex(self, index) :
-        if index > self.NumOfTrajs - 1 or index < 0:
-            print("There are",self.NumOfTrajs,"trajectories but you asked for the",index)
+        if index > len(self.TrajsResults) - 1 or index < 0:
+            print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])

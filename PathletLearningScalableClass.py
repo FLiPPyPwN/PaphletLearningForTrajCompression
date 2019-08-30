@@ -1,25 +1,28 @@
 from pulp import *
+import gc
+import numpy as np
+
 class PathletLearningScalableClass :
     def __init__(self, trajectories) :
-        self.NumOfTrajs = len(trajectories)
 
         self.Pathlets,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning= self.FindAllPossiblePathlets(trajectories)
-        print(self.Pathlets,"\n\n",SubIndexesNeededForPathletLearning)
         self.Xp = [0]*len(self.Pathlets)
+
+        gc.collect()
+
         self.TrajsResults = list()
         for i in range(len(trajectories)) :
+            print(i)
             self.TrajsResults.append(self.SolvePathletLearningScalableLinearly(i,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning))
 
         self.MinimizePathletLearningResults(self.Xp)
 
 
     def FindAllPossiblePathlets(self, trajectories) :
-        print("STARTFINDPOSSIBLEPATHLETS")
         AllPossiblePathlets = []
         TpIndexesNeededForPathletLearning = []
         SubIndexesNeededForPathletLearning = []
 
-        seenSet = set()
         seen = dict()
 
         trajCounter = 0
@@ -34,17 +37,16 @@ class PathletLearningScalableClass :
 
                     sub = tuple(traj[i:j])
                     #print(sub)
-                    if (sub not in seenSet) :
+                    if (sub not in seen) :
                         for k in range(i,j) :
                             trajIndexTemp[k].append(len(AllPossiblePathlets))
 
-                        TpIndexesNeededForPathletLearning.append([trajCounter])
+                        TpIndexesNeededForPathletLearning.append(1)
                         seen[sub] = len(AllPossiblePathlets)
                         AllPossiblePathlets.append(sub)
-                        seenSet.add(sub)
                     else :
                         index = seen[sub]
-                        TpIndexesNeededForPathletLearning[index].append(trajCounter)
+                        TpIndexesNeededForPathletLearning[index] = TpIndexesNeededForPathletLearning[index] + 1
 
                         for k in range(i,j) :
                             trajIndexTemp[k].append(index)
@@ -52,7 +54,6 @@ class PathletLearningScalableClass :
             trajCounter = trajCounter + 1
             SubIndexesNeededForPathletLearning.append(trajIndexTemp)
 
-        print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning
                 
 
@@ -61,7 +62,6 @@ class PathletLearningScalableClass :
 
         #-------------------
         #Constraints
-        print("Adding Set Of Constraints")
         Xtp = LpVariable.dicts("Xtp"+str(trajIndex), list(range(len(self.Pathlets))), cat="Binary")
 
         PathletsUsing = set()
@@ -73,20 +73,15 @@ class PathletLearningScalableClass :
             
             problem += temp == 1
 
-        print("Adding Objective Function")
         temp = 0
-        l = 1
+        l = 0.001
         for i in PathletsUsing :
-            AbsoluteTp = len(TpIndexesNeededForPathletLearning[i])
+            AbsoluteTp = TpIndexesNeededForPathletLearning[i]
             temp += (l + 1/AbsoluteTp)*Xtp[i]
 
         problem += temp
-
-        print("DONE WITH CONSTRAINTS && OBJECTIVE FUNCTION")
-        #print(problem)
         
 
-        print("SolvingStarts!")
         problem.solve() #!!!
 
         trajResults = []
@@ -100,7 +95,6 @@ class PathletLearningScalableClass :
             if trajResults[i] == 1 :
                 self.Xp[i] = 1
 
-        #print(trajResults)
         return trajResults
 
     def MinimizePathletLearningResults(self,PathletResults) :
@@ -113,13 +107,14 @@ class PathletLearningScalableClass :
 
         #print("\nIndexes to Remove: ",indexes)
 
-        k = 0
-        for i in indexes :
-            del self.Pathlets[i - k]
-            del PathletResults[i - k]
-            for traj in self.TrajsResults :
-                del traj[i - k]
-            k = k + 1
+        self.Pathlets = np.array(self.Pathlets)
+        PathletResults = np.array(PathletResults)
+        self.TrajsResults = np.array(self.TrajsResults)
+
+        self.Pathlets = np.delete(self.Pathlets, indexes)
+        PathletResults = np.delete(PathletResults, indexes)
+        self.TrajsResults = np.delete(self.TrajsResults, indexes, 1)
+
 
         NewTrajsResults = []
         for traj in self.TrajsResults :
@@ -138,23 +133,6 @@ class PathletLearningScalableClass :
 
         self.TrajsResults = NewTrajsResults
 
-
-    def ReturnPartRealTraj(self, subtraj1,subtraj2) :
-        if subtraj1 == [] :
-            return subtraj2
-        (x1,y1) = subtraj1[-1]
-        (x2,y2) = subtraj2[0]
-        dist1 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        (x1,y1) = subtraj1[0]
-        (x2,y2) = subtraj2[-1]
-        dist2 = ((x1-x2)**2 + (y1-y2)**2)**(0.5)
-
-        if dist1 < dist2 :
-            return subtraj1 + subtraj2
-        else :
-            return subtraj2 + subtraj1
-
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
         TotalTimes = 0
@@ -162,13 +140,13 @@ class PathletLearningScalableClass :
             (Value,times) = TrajResult[i]
             if Value == 1 :
                 for j in range(times) :
-                    RealTraj = self.ReturnPartRealTraj(RealTraj,self.Pathlets[TotalTimes + j])
+                    RealTraj = RealTraj + list(self.Pathlets[TotalTimes + j])
 
             TotalTimes = TotalTimes + times
 
         return RealTraj
 
-    def ReturnAllTrajsInAList(self) :
+    def ReturnAllTrajectoriesInAList(self) :
         RealTrajs = []
         for i in range(len(self.TrajsResults)) :
             RealTrajs.append(self.ReturnRealTraj(self.TrajsResults[i]))
@@ -176,7 +154,7 @@ class PathletLearningScalableClass :
         return RealTrajs
 
     def ReturnSpecificTrajectoryByIndex(self, index) :
-        if index > self.NumOfTrajs - 1 or index < 0:
-            print("There are",self.NumOfTrajs,"trajectories but you asked for the",index)
+        if index > len(self.TrajsResults) - 1 or index < 0:
+            print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
