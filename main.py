@@ -5,7 +5,8 @@ from PathletLearningScalableDynamicClass import *
 import pandas as pd
 from ast import literal_eval
 import gc
-import sys
+import random
+
 
 def main() :
 
@@ -31,26 +32,55 @@ def main() :
         """
 
         trajectories = []
+        """
         trajectories.append([1,2,3,4,5,6,7,8,9])
         trajectories.append([1,2,3,4])
         trajectories.append([5,6,7,8])
+        """
+
+
+        for i in range(50) :
+                trajectory = random.sample(range(1, 20), 10)
+                trajectory.sort()
+                trajectories.append(trajectory)
+
+        print(trajectories)
+
+        RealTrajListCounter = 0
+        for T in trajectories :
+                RealTrajListCounter = RealTrajListCounter + len(T)
+
+
 
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableDynamicClass(trajectories)
+        plclass = PathletLearningClass(trajectories)
 
         end = time.time()
         print("\nRunTime:",(end - start))
 
         print("\n\n\n\n")
+
+        PathlCounter = 0
+        for P in plclass.Pathlets :
+                PathlCounter = PathlCounter + len(P)
+        
+
+        TrajsCounter = 0
+        for T in plclass.TrajsResults :
+                TrajsCounter = TrajsCounter + len(T)
+        
+
+
         print(plclass.Pathlets,"   ",len(plclass.Pathlets),"   ",plclass.TrajsResults)
+        print(type(plclass.Pathlets),type(plclass.TrajsResults))
+        print(PathlCounter)
+        print(TrajsCounter)
+        print(RealTrajListCounter)
 
 
         AllTrajs = plclass.ReturnAllTrajectoriesInAList()
-        print(plclass.Pathlets)
-
-        print(sys.getsizeof(trajectories),sys.getsizeof(plclass.Pathlets),sys.getsizeof(plclass.TrajsResults))
 
         flag = False
         for i in range(len(AllTrajs)) :

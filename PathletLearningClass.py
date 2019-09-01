@@ -114,7 +114,7 @@ class PathletLearningClass :
         for i in range(len(Xp)) :
             temp += Xp[i]
 
-        l = 0.0001; #lamda
+        l = 1000000; #lamda
         for i in range(len(Xtp)) :
             for j in range(len(Xtp[i])) :
                 temp += l*Xtp[i][j]
@@ -154,39 +154,26 @@ class PathletLearningClass :
         PathletResults = np.array(PathletResults)
         self.TrajsResults = np.array(self.TrajsResults)
 
-        self.Pathlets = np.delete(self.Pathlets, indexes)
+        self.Pathlets = list(np.delete(self.Pathlets, indexes))
         PathletResults = np.delete(PathletResults, indexes)
         self.TrajsResults = np.delete(self.TrajsResults, indexes, 1)
 
 
         NewTrajsResults = []
         for traj in self.TrajsResults :
-            NewTraj = []
-            counter = 1
-            currentValue = traj[0]
-            for i in traj[1:] :
-                if currentValue == i :
-                    counter = counter + 1
-                else :
-                    NewTraj.append((int(currentValue),counter))
-                    counter = 1
-                    currentValue = i
-            NewTraj.append((int(currentValue),counter))
-            NewTrajsResults.append(NewTraj)
+            NewTraj = np.where(traj == 1)[0]
+
+            NewTrajsResults.append(NewTraj.tolist())
 
         self.TrajsResults = NewTrajsResults
 
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
-        TotalTimes = 0
         for i in range(len(TrajResult)) :
-            (Value,times) = TrajResult[i]
-            if Value == 1 :
-                for j in range(times) :
-                    RealTraj = RealTraj + list(self.Pathlets[TotalTimes + j])
+            index = TrajResult[i]
 
-            TotalTimes = TotalTimes + times
+            RealTraj = RealTraj + list(self.Pathlets[index])
 
         return RealTraj
 
