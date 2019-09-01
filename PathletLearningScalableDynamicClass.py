@@ -132,7 +132,7 @@ class PathletLearningScalableDynamicClass :
                     return FoundValuesOfSubPaths[sub]
                 
                 TpResult = self.TpCounterNeededForPathletLearning[sub]
-                l = 1
+                l = 1000000
                 Value = l + 1.0/TpResult
 
                 FoundValuesOfSubPaths[sub] = Value

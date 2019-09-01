@@ -100,9 +100,8 @@ class PathletLearningClass :
                 #indexes = []
                 #indexes = self.ExistsIndexesInPathlets(trajectories[i],j)
                 #print(len(indexes))
-                temp = 0
-                for k in IndexesForConstraints[i][j] :
-                    temp += Xtp[i][k]
+
+                temp = lpSum(Xtp[i][k] for k in IndexesForConstraints[i][j])
 
                 problem += temp == 1
 
@@ -110,14 +109,11 @@ class PathletLearningClass :
         #-------------------
         #objective function
         print("Adding Objective Function")
-        temp = 0
-        for i in range(len(Xp)) :
-            temp += Xp[i]
+        temp = lpSum(Xp[i]  for i in range(len(Xp)))
 
-        l = 1000000; #lamda
-        for i in range(len(Xtp)) :
-            for j in range(len(Xtp[i])) :
-                temp += l*Xtp[i][j]
+        l = 0.1; #lamda
+        
+        temp += lpSum(l*Xtp[i][j] for j in range(len(Xtp[i])) for i in range(len(Xtp)))
 
         problem += temp
         #print(problem)

@@ -67,18 +67,14 @@ class PathletLearningScalableClass :
 
         PathletsUsing = set()
         for indexes in SubIndexesNeededForPathletLearning[trajIndex] :
-            temp = 0
-            for index in indexes :
-                PathletsUsing.add(index)
-                temp += Xtp[index]
+            PathletsUsing.update(indexes)
+
+            temp = lpSum(Xtp[index]  for index in indexes)
             
             problem += temp == 1
 
-        temp = 0
-        l = 0.001
-        for i in PathletsUsing :
-            AbsoluteTp = TpIndexesNeededForPathletLearning[i]
-            temp += (l + 1/AbsoluteTp)*Xtp[i]
+        l = 0.01
+        temp = lpSum((l + 1/TpIndexesNeededForPathletLearning[i])*Xtp[i]  for i in PathletsUsing)
 
         problem += temp
         
@@ -126,7 +122,6 @@ class PathletLearningScalableClass :
 
 
         self.TrajsResults = NewTrajsResults
-        print(self.TrajsResults)
 
     def ReturnRealTraj(self,TrajResult) :
         RealTraj = []
