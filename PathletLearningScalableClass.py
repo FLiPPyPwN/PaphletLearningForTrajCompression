@@ -4,7 +4,40 @@ import numpy as np
 
 class PathletLearningScalableClass :
     def __init__(self, trajectories) :
+        self.Pathlets = list()
+        self.Xp = list()
+        self.TrajsResults = list()
 
+        self.lamda = 0.001
+
+        self.Results = dict()
+
+        while self.lamda < 100000:
+            self.MainFunction(trajectories)
+
+            #Save Results according to lamda
+            PathletCounter = 0
+            TrajsResultsCounter = 0
+
+            for P in self.Pathlets :
+                PathletCounter = PathletCounter + len(P)
+
+            for T in self.TrajsResults :
+                TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+            if PathletCounter == (len(trajectories) * len(trajectories[0])) :
+                break
+
+            self.Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+        
+
+            gc.collect()
+            self.lamda = self.lamda*10
+
+        print(self.Results)
+
+        
+    def MainFunction(self, trajectories) :
         self.Pathlets,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning= self.FindAllPossiblePathlets(trajectories)
         self.Xp = [0]*len(self.Pathlets)
 
@@ -73,11 +106,9 @@ class PathletLearningScalableClass :
             
             problem += temp == 1
 
-        l = 0.01
-        temp = lpSum((l + 1/TpIndexesNeededForPathletLearning[i])*Xtp[i]  for i in PathletsUsing)
+        temp = lpSum((self.lamda + 1/TpIndexesNeededForPathletLearning[i])*Xtp[i]  for i in PathletsUsing)
 
         problem += temp
-        
 
         problem.solve() #!!!
 

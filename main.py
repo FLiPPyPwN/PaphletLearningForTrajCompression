@@ -11,8 +11,7 @@ import random
 def main() :
 
         """
-        #Thewroume oti Grid 4x4
-        num_of_trajectories = 20
+        num_of_trajectories = 30
         trainSet = pd.read_csv(
                 'newTrips.csv', # replace with the correct path
                 converters={"barefootSegmentsSequence": literal_eval},
@@ -32,21 +31,17 @@ def main() :
         """
 
         trajectories = []
-        """
-        trajectories.append([1,2,3,4,5,6,7,8,9])
-        trajectories.append([1,2,3,4])
-        trajectories.append([5,6,7,8])
-        """
 
         #seed for random
         random.seed(1234)
 
         for i in range(100) :
-                trajectory = random.sample(range(1, 10), 5)
+                trajectory = random.sample(range(1, 20), 10)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
         print(trajectories)
+        
 
         RealTrajListCounter = 0
         for T in trajectories :
@@ -57,7 +52,7 @@ def main() :
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableClass(trajectories)
+        plclass = PathletLearningScalableDynamicClass(trajectories)
 
         end = time.time()
         print("\nRunTime:",(end - start))

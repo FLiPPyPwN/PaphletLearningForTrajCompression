@@ -12,8 +12,45 @@ class PathletLearningScalableDynamicClass :
             self.Pathlets = []
             return
 
-        self.TrajsResults = []
+        self.TrajsResults = list()
+        self.Pathlets = list()
 
+        self.lamda = 0.001
+
+        self.Results = dict()
+
+        while self.lamda < 100000:
+            self.MainFunction(trajectories)
+
+            #Save Results according to lamda
+            PathletCounter = 0
+            TrajsResultsCounter = 0
+
+            for P in self.Pathlets :
+                PathletCounter = PathletCounter + len(P)
+
+            for T in self.TrajsResults :
+                TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+            if PathletCounter == (len(trajectories) * len(trajectories[0])) :
+                break
+
+            self.Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+        
+            self.TrajsResults = list()
+            self.Pathlets = list()
+
+            gc.collect()
+            self.lamda = self.lamda*10
+            
+
+        print(self.Results)
+
+
+        
+
+        
+    def MainFunction(self, trajectories) :
         m = multiprocessing.Manager()
         
         self.l = m.Lock()
@@ -53,6 +90,7 @@ class PathletLearningScalableDynamicClass :
         del self.SetForProcs
 
         gc.collect()
+
 
     def FindFStarAndTrajRes(self,traj) :
         FoundValuesOfSubPaths = self.FindFStarForAllSubTrajs(traj)
@@ -132,8 +170,7 @@ class PathletLearningScalableDynamicClass :
                     return FoundValuesOfSubPaths[sub]
                 
                 TpResult = self.TpCounterNeededForPathletLearning[sub]
-                l = 1000000
-                Value = l + 1.0/TpResult
+                Value = self.lamda + 1.0/TpResult
 
                 FoundValuesOfSubPaths[sub] = Value
 

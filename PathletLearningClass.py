@@ -4,7 +4,38 @@ import numpy as np
 
 class PathletLearningClass :
     def __init__(self, trajectories) :
+        self.Pathlets = list()
+        self.TrajsResults = list()
 
+        self.lamda = 0.001
+
+        self.Results = dict()
+
+        while self.lamda < 100000 :
+            self.MainFunction(trajectories)
+
+            #Save Results according to lamda
+            PathletCounter = 0
+            TrajsResultsCounter = 0
+
+            for P in self.Pathlets :
+                PathletCounter = PathletCounter + len(P)
+
+            for T in self.TrajsResults :
+                TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+            if PathletCounter == (len(trajectories) * len(trajectories[0])) :
+                break
+
+            self.Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+        
+
+            gc.collect()
+            self.lamda = self.lamda*10
+
+        print(self.Results)
+
+    def MainFunction(self, trajectories) :
         self.Pathlets, IndexesForConstraints= self.FindAllPossiblePathlets(trajectories)
 
         gc.collect()
@@ -15,8 +46,6 @@ class PathletLearningClass :
         gc.collect()
         
         self.MinimizePathletLearningResults(PathletResults)
-
-        #print("\nAAA\n",self.Pathlets,self.TrajsResults)
         
 
     def FindAllPossiblePathlets(self, trajectories) :
@@ -110,10 +139,8 @@ class PathletLearningClass :
         #objective function
         print("Adding Objective Function")
         temp = lpSum(Xp[i]  for i in range(len(Xp)))
-
-        l = 0.1; #lamda
         
-        temp += lpSum(l*Xtp[i][j] for j in range(len(Xtp[i])) for i in range(len(Xtp)))
+        temp += lpSum(self.lamda*Xtp[i][j] for j in range(len(Xtp[i])) for i in range(len(Xtp)))
 
         problem += temp
         #print(problem)
