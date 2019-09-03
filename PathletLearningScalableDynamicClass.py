@@ -4,6 +4,7 @@ import multiprocessing
 from functools import partial
 import os
 import pickle
+import matplotlib.pyplot as plt
 
 class PathletLearningScalableDynamicClass :
     def __init__(self, trajectories=[]) :
@@ -17,7 +18,10 @@ class PathletLearningScalableDynamicClass :
 
         self.lamda = 0.001
 
-        self.Results = dict()
+        Results = dict()
+        
+        self.BestResultCounter = len(trajectories) * len(trajectories[0])
+        self.BestResult = ()
 
         while self.lamda < 100000:
             self.MainFunction(trajectories)
@@ -35,16 +39,24 @@ class PathletLearningScalableDynamicClass :
             if PathletCounter == (len(trajectories) * len(trajectories[0])) :
                 break
 
-            self.Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+            Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+
+
+            if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
+                self.BestResult = (self.Pathlets,self.TrajsResults)
         
             self.TrajsResults = list()
             self.Pathlets = list()
 
             gc.collect()
             self.lamda = self.lamda*10
+
+        if self.BestResult is not () :
+            (self.Pathlets,self.TrajsResults) = self.BestResult
             
 
-        print(self.Results)
+        print(Results)
+        print(self.Pathlets,self.TrajsResults)
 
 
         
@@ -295,3 +307,66 @@ class PathletLearningScalableDynamicClass :
             print("There are",len(self.Pathlets),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
+
+    def TimesPathletsUsed(self) :
+
+        TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
+
+        TimesPathletsUsed = [0]*len(self.Pathlets)
+        for trajIndex in range(len(self.TrajsResults)) :
+            for PathletIndex in self.TrajsResults[trajIndex] :
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+
+                TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
+
+
+        #calculate percentage of reconstructable trajectories by deleting methodically from pathlets
+        TrajectoriesDeclined = set()
+        CalculatedResult = [(100,100)]
+
+        PathletsRemovedCounter = 1
+        while TimesPathletsUsed :
+            minIndex = TimesPathletsUsed.index(min(TimesPathletsUsed))
+
+            TrajectoriesDeclined.update(TrajectoriesThatUsePathlet[minIndex])
+
+            del TrajectoriesThatUsePathlet[minIndex]
+            del TimesPathletsUsed[minIndex]
+
+            if ((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets)) == 0 or ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults)) == 0 :
+                break
+
+            CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
+
+            PathletsRemovedCounter = PathletsRemovedCounter + 1
+
+        print(CalculatedResult)
+
+        xaxis = list()
+        yaxis = list()
+
+        for (x,y) in CalculatedResult :
+            xaxis.append(x)
+            yaxis.append(y)
+
+        BestDifference = 0
+        BestDifResult = ()
+        for index in range(len(xaxis)) :
+            if yaxis[index] - xaxis[index] > BestDifference or not BestDifResult:
+                BestDifference = yaxis[index] - xaxis[index]
+                BestDifResult = (xaxis[index],yaxis[index])
+
+        print(BestDifference,BestDifResult)
+
+        (x,y) = BestDifResult
+
+        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")", xy=BestDifResult, xytext=(5, 95),
+            arrowprops=dict(facecolor='black', shrink=0.05))
+
+        plt.title('PercentageOfReconstrutedTrajectoriesByPathlets')
+        plt.xlabel('Percentage of Dictionary in Use')
+        plt.ylabel('Percentage of Reconstructable Trajectories')
+
+        plt.plot(xaxis, yaxis,'--bo')
+        plt.axis([0, 100, 0, 100])
+        plt.show()

@@ -1,16 +1,23 @@
 from pulp import *
 import gc
 import numpy as np
+import matplotlib.pyplot as plt
 
 class PathletLearningScalableClass :
     def __init__(self, trajectories) :
+        #if optimized with percentage of use
+        self.NormalTrajectories = list()
+
         self.Pathlets = list()
         self.Xp = list()
         self.TrajsResults = list()
 
         self.lamda = 0.001
 
-        self.Results = dict()
+        Results = dict()
+
+        self.BestResultCounter = len(trajectories) * len(trajectories[0])
+        self.BestResult = ()
 
         while self.lamda < 100000:
             self.MainFunction(trajectories)
@@ -28,13 +35,20 @@ class PathletLearningScalableClass :
             if PathletCounter == (len(trajectories) * len(trajectories[0])) :
                 break
 
-            self.Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+            Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+
+            if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
+                self.BestResult = (self.Pathlets,self.TrajsResults)
         
 
             gc.collect()
             self.lamda = self.lamda*10
 
-        print(self.Results)
+        if self.BestResult is not () :
+            (self.Pathlets,self.TrajsResults) = self.BestResult
+
+        print(Results)
+        print(self.Pathlets,self.TrajsResults)
 
         
     def MainFunction(self, trajectories) :
@@ -175,3 +189,133 @@ class PathletLearningScalableClass :
             print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
+
+    def TimesPathletsUsed(self,flag) :
+
+        TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
+
+        TimesPathletsUsed = [0]*len(self.Pathlets)
+        for trajIndex in range(len(self.TrajsResults)) :
+            for PathletIndex in self.TrajsResults[trajIndex] :
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+
+                TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
+
+
+        #calculate percentage of reconstructable trajectories by deleting methodically from pathlets
+        TrajectoriesDeclined = set()
+        CalculatedResult = [(100,100)]
+
+        PathletsRemovedCounter = 1
+        while TimesPathletsUsed :
+            minIndex = TimesPathletsUsed.index(min(TimesPathletsUsed))
+
+            TrajectoriesDeclined.update(TrajectoriesThatUsePathlet[minIndex])
+
+            del TrajectoriesThatUsePathlet[minIndex]
+            del TimesPathletsUsed[minIndex]
+
+            if ((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets)) == 0 or ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults)) == 0 :
+                break
+
+            CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
+
+            PathletsRemovedCounter = PathletsRemovedCounter + 1
+
+        print(CalculatedResult)
+
+        xaxis = list()
+        yaxis = list()
+
+        for (x,y) in CalculatedResult :
+            xaxis.append(x)
+            yaxis.append(y)
+
+        BestDifference = 0
+        BestDifResult = ()
+        for index in range(len(xaxis)) :
+            if yaxis[index] - xaxis[index] > BestDifference or not BestDifResult:
+                BestDifference = yaxis[index] - xaxis[index]
+                BestDifResult = (xaxis[index],yaxis[index])
+
+        print(BestDifference,BestDifResult)
+
+        (x,y) = BestDifResult
+
+        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")", xy=BestDifResult, xytext=(5, 95),
+            arrowprops=dict(facecolor='black', shrink=0.05))
+
+        plt.title('PercentageOfReconstrutedTrajectoriesByPathlets')
+        plt.xlabel('Percentage of Dictionary in Use')
+        plt.ylabel('Percentage of Reconstructable Trajectories')
+
+        plt.plot(xaxis, yaxis,'--bo')
+        plt.axis([0, 100, 0, 100])
+        plt.show()
+
+        if flag :
+            self.OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(BestDifResult)
+
+
+
+
+    def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :
+        (x,y) = BestDifResult
+        print(x,y)
+
+        TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
+
+        TimesPathletsUsed = [0]*len(self.Pathlets)
+        for trajIndex in range(len(self.TrajsResults)) :
+            for PathletIndex in self.TrajsResults[trajIndex] :
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+
+                TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
+
+
+        TrajectoriesDeclined = set()
+        PathletsDeclined = list()
+
+        CalculatedResult = [(100,100)]
+
+        PathletsRemovedCounter = 0
+        while TimesPathletsUsed :
+            if ((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100 == x and ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100 == y :
+                break
+
+            PathletsRemovedCounter = PathletsRemovedCounter + 1
+
+            minIndex = TimesPathletsUsed.index(min(TimesPathletsUsed))
+
+            TrajectoriesDeclined.update(TrajectoriesThatUsePathlet[minIndex])
+            PathletsDeclined.append(minIndex)
+
+            del TrajectoriesThatUsePathlet[minIndex]
+            del TimesPathletsUsed[minIndex]
+
+            
+            CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
+
+        for i in TrajectoriesDeclined :
+            self.NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
+
+        #TODO !!!!!!!!!!!!
+        TrajectoriesDeclined = list(TrajectoriesDeclined)
+        print(self.TrajsResults)
+        self.TrajsResults = np.array(self.TrajsResults)
+        print(self.TrajsResults)
+        self.TrajsResults = np.delete(self.TrajsResults, TrajectoriesDeclined,0)
+
+        print(self.Pathlets)
+        self.Pathlets = np.array(self.Pathlets)
+        print(self.Pathlets)
+        self.Pathlets = np.delete(self.Pathlets, PathletsDeclined,0)
+
+        print("!!!!!!",self.Pathlets,self.TrajsResults)
+
+        print(TrajectoriesDeclined,PathletsDeclined)
+
+
+        
+
+        

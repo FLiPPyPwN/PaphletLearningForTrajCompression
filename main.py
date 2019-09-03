@@ -36,7 +36,7 @@ def main() :
         random.seed(1234)
 
         for i in range(100) :
-                trajectory = random.sample(range(1, 20), 10)
+                trajectory = random.sample(range(1, 7), 5)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
@@ -52,7 +52,8 @@ def main() :
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableDynamicClass(trajectories)
+        plclass = PathletLearningScalableClass(trajectories)
+        plclass.TimesPathletsUsed(False)
 
         end = time.time()
         print("\nRunTime:",(end - start))
