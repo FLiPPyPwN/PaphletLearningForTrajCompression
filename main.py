@@ -35,8 +35,8 @@ def main() :
         #seed for random
         random.seed(1234)
 
-        for i in range(100) :
-                trajectory = random.sample(range(1, 7), 5)
+        for i in range(50) :
+                trajectory = random.sample(range(1, 20), 5)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
@@ -52,8 +52,9 @@ def main() :
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableClass(trajectories)
-        plclass.TimesPathletsUsed(False)
+        plclass = PathletLearningScalableDynamicClass(trajectories)
+        PercentageOptimizer = True
+        plclass.TimesPathletsUsed(PercentageOptimizer)
 
         end = time.time()
         print("\nRunTime:",(end - start))
@@ -68,6 +69,8 @@ def main() :
         TrajsCounter = 0
         for T in plclass.TrajsResults :
                 TrajsCounter = TrajsCounter + len(T)
+        for T in plclass.NormalTrajectories :
+                TrajsCounter = TrajsCounter + len(T)
         
 
 
@@ -79,11 +82,16 @@ def main() :
 
 
         AllTrajs = plclass.ReturnAllTrajectoriesInAList()
+        print(AllTrajs)
 
         flag = False
-        for i in range(len(AllTrajs)) :
-                if not(set(AllTrajs[i]) == set(trajectories[i])) :
+        if PercentageOptimizer :
+                if sorted(AllTrajs) == sorted(trajectories) :
                         flag = True
+        else :
+                for i in range(len(AllTrajs)) :
+                        if not(set(AllTrajs[i]) == set(trajectories[i])) :
+                                flag = True
 
         if flag :
                 print("trajectories not the same")

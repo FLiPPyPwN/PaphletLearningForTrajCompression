@@ -46,6 +46,9 @@ class PathletLearningScalableClass :
 
         if self.BestResult is not () :
             (self.Pathlets,self.TrajsResults) = self.BestResult
+        else :
+            print("Pathlet Learning is not worth it cause not many common subpaths")
+            self.NormalTrajectories = trajectories
 
         print(Results)
         print(self.Pathlets,self.TrajsResults)
@@ -182,8 +185,11 @@ class PathletLearningScalableClass :
         for i in range(len(self.TrajsResults)) :
             RealTrajs.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
+        RealTrajs = RealTrajs + self.NormalTrajectories
+
         return RealTrajs
 
+    #Cant work if used UsagePercentageOptimization
     def ReturnSpecificTrajectoryByIndex(self, index) :
         if index > len(self.TrajsResults) - 1 or index < 0:
             print("There are",len(self.TrajsResults),"trajectories but you asked for the",index)
@@ -191,6 +197,9 @@ class PathletLearningScalableClass :
             return self.ReturnRealTraj(self.TrajsResults[index])
 
     def TimesPathletsUsed(self,flag) :
+        if not self.Pathlets :
+            print("There are no Pathlets!")
+            return
 
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
 
@@ -200,6 +209,9 @@ class PathletLearningScalableClass :
                 TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
 
                 TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
+
+        for i in range(len(TimesPathletsUsed)) :
+            TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
         #calculate percentage of reconstructable trajectories by deleting methodically from pathlets
@@ -222,7 +234,6 @@ class PathletLearningScalableClass :
 
             PathletsRemovedCounter = PathletsRemovedCounter + 1
 
-        print(CalculatedResult)
 
         xaxis = list()
         yaxis = list()
@@ -238,7 +249,6 @@ class PathletLearningScalableClass :
                 BestDifference = yaxis[index] - xaxis[index]
                 BestDifResult = (xaxis[index],yaxis[index])
 
-        print(BestDifference,BestDifResult)
 
         (x,y) = BestDifResult
 
@@ -260,8 +270,15 @@ class PathletLearningScalableClass :
 
 
     def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :
+        PreviousRes = 0 #Check if Optimization worth it
+        for P in self.Pathlets :
+                PreviousRes = PreviousRes + len(P)
+        for T in self.TrajsResults :
+                PreviousRes = PreviousRes + len(T)
+                
+
+
         (x,y) = BestDifResult
-        print(x,y)
 
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
 
@@ -271,6 +288,9 @@ class PathletLearningScalableClass :
                 TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
 
                 TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
+
+        for i in range(len(TimesPathletsUsed)) :
+            TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
         TrajectoriesDeclined = set()
@@ -296,26 +316,66 @@ class PathletLearningScalableClass :
             
             CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
 
+        NormalTrajectories = list()
         for i in TrajectoriesDeclined :
-            self.NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
-
-        #TODO !!!!!!!!!!!!
-        TrajectoriesDeclined = list(TrajectoriesDeclined)
-        print(self.TrajsResults)
-        self.TrajsResults = np.array(self.TrajsResults)
-        print(self.TrajsResults)
-        self.TrajsResults = np.delete(self.TrajsResults, TrajectoriesDeclined,0)
-
-        print(self.Pathlets)
-        self.Pathlets = np.array(self.Pathlets)
-        print(self.Pathlets)
-        self.Pathlets = np.delete(self.Pathlets, PathletsDeclined,0)
-
-        print("!!!!!!",self.Pathlets,self.TrajsResults)
-
-        print(TrajectoriesDeclined,PathletsDeclined)
-
+            NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
         
+        #----------------------------------------------------
 
+        DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
+        DecreaseCounter = 0
+        for i in range(len(DecreaseOfPointersToPathlets)) :
+            if i in TrajectoriesDeclined :
+                DecreaseCounter = DecreaseCounter + 1
+            else :
+                DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
+
+        
+        TrajectoriesDeclined = list(TrajectoriesDeclined)
+
+        TrajsResults = np.array(self.TrajsResults)
+
+        TrajsResults = np.delete(TrajsResults, TrajectoriesDeclined,0)
+
+        for i in range(len(TrajsResults)) :
+            for j in range(len(TrajsResults[i])) :
+                TrajsResults[i][j] = DecreaseOfPointersToPathlets[TrajsResults[i][j]]
+
+
+        #-----------------------------------------------------
+
+        Pathlets = np.array(self.Pathlets)
+
+        Pathlets = np.delete(Pathlets, PathletsDeclined,0)
+
+        Pathlets.tolist()
+        TrajsResults.tolist()
+
+        Pathlets = list(Pathlets)
+        TrajsResults = list(TrajsResults)
+
+        CurrentRes = 0
+        for P in Pathlets :
+                CurrentRes = CurrentRes + len(P)
+        
+        for T in TrajsResults :
+                CurrentRes = CurrentRes + len(T)
+        for T in NormalTrajectories :
+                CurrentRes = CurrentRes + len(T)
+
+        if CurrentRes < PreviousRes :
+            print("Optimization via UsePercentage is worth it. Previous:"+str(PreviousRes)+" _ Current:"+str(CurrentRes))
+        else :
+            print("Optimization via UsePercentage is NOT worth it. Previous:"+str(PreviousRes)+" _ Current:"+str(CurrentRes))
+
+        implement = ""
+        while not(implement == 'yes') and not(implement == 'no') :
+            implement = input("Do you want to implement Optimization? yes or no: ")
+            print(implement)
+
+        if implement == 'yes' :
+            self.TrajsResults = TrajsResults
+            self.Pathlets = Pathlets
+            self.NormalTrajectories = NormalTrajectories
         
