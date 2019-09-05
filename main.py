@@ -6,18 +6,20 @@ import pandas as pd
 from ast import literal_eval
 import gc
 import random
+from collections import Counter
 
 
 def main() :
 
         """
-        num_of_trajectories = 30
+        num_of_trajectories = 1000
         trainSet = pd.read_csv(
                 'newTrips.csv', # replace with the correct path
                 converters={"barefootSegmentsSequence": literal_eval},
                 index_col='newTripID')
 
         trajectories = []
+
         x = 0
         for y in trainSet['barefootSegmentsSequence'] :
                 trajectories.append(y)
@@ -28,15 +30,15 @@ def main() :
 
         del trainSet
         gc.collect()
+        
         """
-
         trajectories = []
 
         #seed for random
         random.seed(1234)
 
         for i in range(50) :
-                trajectory = random.sample(range(1, 20), 5)
+                trajectory = random.sample(range(1, 7), 5)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
@@ -52,8 +54,14 @@ def main() :
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableDynamicClass(trajectories)
+        plclass = PathletLearningClass(trajectories)
+        print("Done PathletLearning")
+        end = time.time()
+        print("\nRunTime:",(end - start))
+
+        start = time.time()
         PercentageOptimizer = True
+        print("Starting UsagePercentageOptimization")
         plclass.TimesPathletsUsed(PercentageOptimizer)
 
         end = time.time()
@@ -82,15 +90,27 @@ def main() :
 
 
         AllTrajs = plclass.ReturnAllTrajectoriesInAList()
-        print(AllTrajs)
+
+        print(sorted(AllTrajs)," !!! ",sorted(trajectories))
+
+        AllTrajs = sorted(AllTrajs)
+
+        trajectories = sorted(trajectories)
+
+        print(len(AllTrajs),"   ",len(trajectories))
 
         flag = False
-        if PercentageOptimizer :
-                if sorted(AllTrajs) == sorted(trajectories) :
+        if PercentageOptimizer and plclass.NormalTrajectories:
+                for i in range(len(AllTrajs)) :
+                        print(AllTrajs[i],"   ",trajectories[i])
+                """
+                if not(Counter(AllTrajs) == Counter(trajectories)) :
+                        print(AllTrajs[i],"     ",trajectories[i])
                         flag = True
+                """
         else :
                 for i in range(len(AllTrajs)) :
-                        if not(set(AllTrajs[i]) == set(trajectories[i])) :
+                        if not(AllTrajs[i] == trajectories[i]) :
                                 flag = True
 
         if flag :

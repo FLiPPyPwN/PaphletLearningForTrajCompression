@@ -2,9 +2,20 @@ from pulp import *
 import gc
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 class PathletLearningScalableClass :
-    def __init__(self, trajectories) :
+    def __init__(self, trajectories = [], l = -1) :
+        if not trajectories :
+            self.TrajsResults = []
+            self.Pathlets = []
+            return
+            
+        RealTrajListCounter = 0
+        for T in trajectories :
+                RealTrajListCounter = RealTrajListCounter + len(T)
+
+
         #if optimized with percentage of use
         self.NormalTrajectories = list()
 
@@ -13,16 +24,46 @@ class PathletLearningScalableClass :
         self.TrajsResults = list()
 
         self.lamda = 0.001
+        if not(l == -1) :
+            self.lamda = l
 
         Results = dict()
-
-        self.BestResultCounter = len(trajectories) * len(trajectories[0])
+        
+        self.BestResultCounter = RealTrajListCounter
         self.BestResult = ()
 
-        while self.lamda < 100000:
+        if l == - 1 :
+            while self.lamda < 100000:
+                self.MainFunction(trajectories)
+
+                #Save Results according to lamda
+                PathletCounter = 0
+                TrajsResultsCounter = 0
+
+                for P in self.Pathlets :
+                    PathletCounter = PathletCounter + len(P)
+
+                for T in self.TrajsResults :
+                    TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+                if PathletCounter == RealTrajListCounter :
+                    break
+
+                Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
+
+
+                if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
+                    self.BestResult = (self.Pathlets,self.TrajsResults)
+            
+                self.TrajsResults = list()
+                self.Pathlets = list()
+
+                gc.collect()
+                self.lamda = self.lamda*10
+
+        else :
             self.MainFunction(trajectories)
 
-            #Save Results according to lamda
             PathletCounter = 0
             TrajsResultsCounter = 0
 
@@ -32,23 +73,21 @@ class PathletLearningScalableClass :
             for T in self.TrajsResults :
                 TrajsResultsCounter = TrajsResultsCounter + len(T)
 
-            if PathletCounter == (len(trajectories) * len(trajectories[0])) :
-                break
-
             Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
 
             if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
                 self.BestResult = (self.Pathlets,self.TrajsResults)
-        
 
             gc.collect()
-            self.lamda = self.lamda*10
 
         if self.BestResult is not () :
             (self.Pathlets,self.TrajsResults) = self.BestResult
         else :
             print("Pathlet Learning is not worth it cause not many common subpaths")
             self.NormalTrajectories = trajectories
+            self.Pathlets = list()
+            self.TrajsResults = list()
+            gc.collect()
 
         print(Results)
         print(self.Pathlets,self.TrajsResults)
@@ -178,7 +217,7 @@ class PathletLearningScalableClass :
 
             RealTraj = RealTraj + list(self.Pathlets[index])
 
-        return RealTraj
+        return sorted(RealTraj)
 
     def ReturnAllTrajectoriesInAList(self) :
         RealTrajs = []
@@ -316,9 +355,10 @@ class PathletLearningScalableClass :
             
             CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
 
-        NormalTrajectories = list()
+        NormalTrajectoriesTemp = list()
         for i in TrajectoriesDeclined :
-            NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
+            print(self.ReturnRealTraj(self.TrajsResults[i]))
+            NormalTrajectoriesTemp.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
         
         #----------------------------------------------------
@@ -334,34 +374,35 @@ class PathletLearningScalableClass :
         
         TrajectoriesDeclined = list(TrajectoriesDeclined)
 
-        TrajsResults = np.array(self.TrajsResults)
+        TrajsResultsTemp = copy.deepcopy(self.TrajsResults)
+        TrajsResultsTemp = np.array(TrajsResultsTemp)
 
-        TrajsResults = np.delete(TrajsResults, TrajectoriesDeclined,0)
+        TrajsResultsTemp = np.delete(TrajsResultsTemp, TrajectoriesDeclined,0)
 
-        for i in range(len(TrajsResults)) :
-            for j in range(len(TrajsResults[i])) :
-                TrajsResults[i][j] = DecreaseOfPointersToPathlets[TrajsResults[i][j]]
-
+        for i in range(len(TrajsResultsTemp)) :
+            for j in range(len(TrajsResultsTemp[i])) :
+                TrajsResultsTemp[i][j] = DecreaseOfPointersToPathlets[TrajsResultsTemp[i][j]]
 
         #-----------------------------------------------------
 
-        Pathlets = np.array(self.Pathlets)
+        PathletsTemp = copy.deepcopy(self.Pathlets)
+        PathletsTemp = np.array(PathletsTemp)
 
-        Pathlets = np.delete(Pathlets, PathletsDeclined,0)
+        PathletsTemp = np.delete(PathletsTemp, PathletsDeclined,0)
 
-        Pathlets.tolist()
-        TrajsResults.tolist()
+        PathletsTemp.tolist()
+        TrajsResultsTemp.tolist()
 
-        Pathlets = list(Pathlets)
-        TrajsResults = list(TrajsResults)
+        PathletsTemp = list(PathletsTemp)
+        TrajsResultsTemp = list(TrajsResultsTemp)
 
         CurrentRes = 0
-        for P in Pathlets :
+        for P in PathletsTemp :
                 CurrentRes = CurrentRes + len(P)
         
-        for T in TrajsResults :
+        for T in TrajsResultsTemp :
                 CurrentRes = CurrentRes + len(T)
-        for T in NormalTrajectories :
+        for T in NormalTrajectoriesTemp :
                 CurrentRes = CurrentRes + len(T)
 
         if CurrentRes < PreviousRes :
@@ -375,7 +416,8 @@ class PathletLearningScalableClass :
             print(implement)
 
         if implement == 'yes' :
-            self.TrajsResults = TrajsResults
-            self.Pathlets = Pathlets
-            self.NormalTrajectories = NormalTrajectories
+            print("IN HERE???")
+            self.TrajsResults = TrajsResultsTemp
+            self.Pathlets = PathletsTemp
+            self.NormalTrajectories = NormalTrajectoriesTemp
         
