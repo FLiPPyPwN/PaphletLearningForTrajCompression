@@ -37,8 +37,8 @@ def main() :
         #seed for random
         random.seed(1234)
 
-        for i in range(50) :
-                trajectory = random.sample(range(1, 7), 5)
+        for i in range(100) :
+                trajectory = random.sample(range(1, 10), 5)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
@@ -54,7 +54,7 @@ def main() :
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningClass(trajectories)
+        plclass = PathletLearningClass(trajectories,1)
         print("Done PathletLearning")
         end = time.time()
         print("\nRunTime:",(end - start))
@@ -89,10 +89,12 @@ def main() :
         print(RealTrajListCounter)
 
 
+
         AllTrajs = plclass.ReturnAllTrajectoriesInAList()
 
         print(sorted(AllTrajs)," !!! ",sorted(trajectories))
 
+        #TA KANW SORT GIATI AN KANAME PERCENTAGE OPTIMIZE DN PAIZEI NA EINAI ME THN SEIRA
         AllTrajs = sorted(AllTrajs)
 
         trajectories = sorted(trajectories)
@@ -100,16 +102,7 @@ def main() :
         print(len(AllTrajs),"   ",len(trajectories))
 
         flag = False
-        if PercentageOptimizer and plclass.NormalTrajectories:
-                for i in range(len(AllTrajs)) :
-                        print(AllTrajs[i],"   ",trajectories[i])
-                """
-                if not(Counter(AllTrajs) == Counter(trajectories)) :
-                        print(AllTrajs[i],"     ",trajectories[i])
-                        flag = True
-                """
-        else :
-                for i in range(len(AllTrajs)) :
+        for i in range(len(AllTrajs)) :
                         if not(AllTrajs[i] == trajectories[i]) :
                                 flag = True
 

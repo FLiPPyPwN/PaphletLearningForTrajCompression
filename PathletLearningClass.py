@@ -96,7 +96,6 @@ class PathletLearningClass :
         gc.collect()
 
         PathletResults,self.TrajsResults = self.SolvePathletLearningLinearly(trajectories, IndexesForConstraints)
-        #print(IndexesForConstraints)
 
         gc.collect()
         
@@ -104,7 +103,7 @@ class PathletLearningClass :
         
 
     def FindAllPossiblePathlets(self, trajectories) :
-        print("STARTFINDPOSSIBLEPATHLETS")
+        print("START FIND POSSIBLE PATHLETS")
         AllPossiblePathlets = []
         TrajsIndexesNeededForPathletLearning = []
 
@@ -120,7 +119,7 @@ class PathletLearningClass :
                 for j in range(i + 1, len(traj) + 1): 
 
                     sub = tuple(traj[i:j])
-                    #print(sub)
+
                     if (sub not in seen) :
                         for k in range(i,j) :
                             trajIndexTemp[k].append(len(AllPossiblePathlets))
@@ -128,15 +127,15 @@ class PathletLearningClass :
                         seen[sub] = len(AllPossiblePathlets)
                         AllPossiblePathlets.append(sub)
                     else :
-                        #print("FINDINDEX")
+
                         index = seen[sub]
-                        #print("FOUNDINDEX")
+
                         for k in range(i,j) :
                             trajIndexTemp[k].append(index)
 
-            #print(trajIndexTemp)
+
             TrajsIndexesNeededForPathletLearning.append(trajIndexTemp)
-            #print("FINISHED A TRAJECTORY")
+
      
         print("FoundAllPossiblePathlets")
         return AllPossiblePathlets, TrajsIndexesNeededForPathletLearning
@@ -172,12 +171,10 @@ class PathletLearningClass :
             for j in range(len(Xtp[i])) :
                 problem += Xtp[i][j] <= Xp[j]
 
-            print(i)
 
         print("2nd Set Of Constraints")
 
 
-        #print(IndexesForConstraints)
         for i in range(len(trajectories)) :
 
             for j in range(len(trajectories[i])) :
@@ -189,7 +186,6 @@ class PathletLearningClass :
 
                 problem += temp == 1
 
-            print(i)
         #-------------------
         #objective function
         print("Adding Objective Function")
@@ -198,7 +194,7 @@ class PathletLearningClass :
         temp += lpSum(self.lamda*Xtp[i][j] for j in range(len(Xtp[i])) for i in range(len(Xtp)))
 
         problem += temp
-        #print(problem)
+
         print("SolvingStarts!")
 
         problem.solve() #!!!
@@ -206,7 +202,7 @@ class PathletLearningClass :
         PathletResults = []
         for i in range(len(self.Pathlets)) :
             PathletResults.append(Xp[i].varValue)
-        #print(PathletResults)
+
 
         TrajsResults = []
         for i in range(len(trajectories)) :
@@ -214,7 +210,7 @@ class PathletLearningClass :
             for j in range(len(self.Pathlets)) :
                 trajResult.append(Xtp[i][j].varValue)
             TrajsResults.append(trajResult)
-        #print(TrajsResults)
+
         
         return PathletResults,TrajsResults
 
@@ -226,7 +222,6 @@ class PathletLearningClass :
             if PathletResults[i] == 0 :
                 indexes.append(i)
 
-        #print("\nIndexes to Remove: ",indexes)
 
         self.Pathlets = np.array(self.Pathlets)
         PathletResults = np.array(PathletResults)
@@ -368,6 +363,11 @@ class PathletLearningClass :
             TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
+        #Xrhsh gia euresh twn pathlets p tha petaksoume
+        PathletsDeclinedTemp = copy.deepcopy(TimesPathletsUsed)
+        PathletsDeclinedTemp = np.argsort(PathletsDeclinedTemp)
+        #------------------------------------------------
+
         TrajectoriesDeclined = set()
         PathletsDeclined = list()
 
@@ -391,17 +391,18 @@ class PathletLearningClass :
             
             CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
 
+        PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
+
         NormalTrajectories = list()
         for i in TrajectoriesDeclined :
             NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
-        
         #----------------------------------------------------
 
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
         for i in range(len(DecreaseOfPointersToPathlets)) :
-            if i in TrajectoriesDeclined :
+            if i in PathletsDeclined :
                 DecreaseCounter = DecreaseCounter + 1
             else :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter

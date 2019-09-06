@@ -90,11 +90,7 @@ class PathletLearningScalableDynamicClass :
             self.Pathlets = list()
             self.TrajsResults = list()
             gc.collect()
-            
 
-        print(Results)
-        print(self.Pathlets,self.TrajsResults)
-        print(self.NormalTrajectories)
 
 
         
@@ -122,7 +118,7 @@ class PathletLearningScalableDynamicClass :
 
         self.TpCounterNeededForPathletLearning = dict(self.TpCounterNeededForPathletLearning)
 
-        print("FoundTpCounters")
+        print("FoundTpCounters for lamda =",self.lamda)
 
         gc.collect()
 
@@ -378,7 +374,6 @@ class PathletLearningScalableDynamicClass :
 
             PathletsRemovedCounter = PathletsRemovedCounter + 1
 
-        print(CalculatedResult)
 
         xaxis = list()
         yaxis = list()
@@ -393,8 +388,6 @@ class PathletLearningScalableDynamicClass :
             if yaxis[index] - xaxis[index] > BestDifference or not BestDifResult:
                 BestDifference = yaxis[index] - xaxis[index]
                 BestDifResult = (xaxis[index],yaxis[index])
-
-        print(BestDifference,BestDifResult)
 
         (x,y) = BestDifResult
 
@@ -506,6 +499,11 @@ class PathletLearningScalableDynamicClass :
             TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
+        #Xrhsh gia euresh twn pathlets p tha petaksoume
+        PathletsDeclinedTemp = copy.deepcopy(TimesPathletsUsed)
+        PathletsDeclinedTemp = np.argsort(PathletsDeclinedTemp)
+        #------------------------------------------------
+
         TrajectoriesDeclined = set()
         PathletsDeclined = list()
 
@@ -528,7 +526,9 @@ class PathletLearningScalableDynamicClass :
 
             
             CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
-        
+
+        PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
+
         NormalTrajectories = list()
         for i in TrajectoriesDeclined :
             NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
@@ -539,10 +539,11 @@ class PathletLearningScalableDynamicClass :
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
         for i in range(len(DecreaseOfPointersToPathlets)) :
-            if i in TrajectoriesDeclined :
+            if i in PathletsDeclined :
                 DecreaseCounter = DecreaseCounter + 1
             else :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
+
 
         
         TrajectoriesDeclined = list(TrajectoriesDeclined)

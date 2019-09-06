@@ -101,7 +101,6 @@ class PathletLearningScalableClass :
 
         self.TrajsResults = list()
         for i in range(len(trajectories)) :
-            print(i)
             self.TrajsResults.append(self.SolvePathletLearningScalableLinearly(i,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning))
 
         self.MinimizePathletLearningResults(self.Xp)
@@ -126,7 +125,6 @@ class PathletLearningScalableClass :
                 for j in range(i + 1, len(traj) + 1): 
 
                     sub = tuple(traj[i:j])
-                    #print(sub)
                     if (sub not in seen) :
                         for k in range(i,j) :
                             trajIndexTemp[k].append(len(AllPossiblePathlets))
@@ -189,7 +187,6 @@ class PathletLearningScalableClass :
             if PathletResults[i] == 0 :
                 indexes.append(i)
 
-        #print("\nIndexes to Remove: ",indexes)
 
         self.Pathlets = np.array(self.Pathlets)
         PathletResults = np.array(PathletResults)
@@ -332,6 +329,11 @@ class PathletLearningScalableClass :
             TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
+        #Xrhsh gia euresh twn pathlets p tha petaksoume
+        PathletsDeclinedTemp = copy.deepcopy(TimesPathletsUsed)
+        PathletsDeclinedTemp = np.argsort(PathletsDeclinedTemp)
+        #------------------------------------------------
+
         TrajectoriesDeclined = set()
         PathletsDeclined = list()
 
@@ -355,9 +357,10 @@ class PathletLearningScalableClass :
             
             CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
 
+        PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
+
         NormalTrajectoriesTemp = list()
         for i in TrajectoriesDeclined :
-            print(self.ReturnRealTraj(self.TrajsResults[i]))
             NormalTrajectoriesTemp.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
         
@@ -366,7 +369,7 @@ class PathletLearningScalableClass :
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
         for i in range(len(DecreaseOfPointersToPathlets)) :
-            if i in TrajectoriesDeclined :
+            if i in PathletsDeclined :
                 DecreaseCounter = DecreaseCounter + 1
             else :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
@@ -416,7 +419,6 @@ class PathletLearningScalableClass :
             print(implement)
 
         if implement == 'yes' :
-            print("IN HERE???")
             self.TrajsResults = TrajsResultsTemp
             self.Pathlets = PathletsTemp
             self.NormalTrajectories = NormalTrajectoriesTemp
