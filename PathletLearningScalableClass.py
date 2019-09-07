@@ -305,15 +305,7 @@ class PathletLearningScalableClass :
 
 
 
-    def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :
-        PreviousRes = 0 #Check if Optimization worth it
-        for P in self.Pathlets :
-                PreviousRes = PreviousRes + len(P)
-        for T in self.TrajsResults :
-                PreviousRes = PreviousRes + len(T)
-                
-
-
+    def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :     
         (x,y) = BestDifResult
 
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
@@ -359,13 +351,23 @@ class PathletLearningScalableClass :
 
         PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
 
-        NormalTrajectoriesTemp = list()
+        self.FindAndAskForPercentageOptimization(PathletsDeclined,TrajectoriesDeclined)
+
+        
+
+    def FindAndAskForPercentageOptimization(self,PathletsDeclined,TrajectoriesDeclined) :
+        PreviousRes = 0 #Check if Optimization worth it
+        for P in self.Pathlets :
+                PreviousRes = PreviousRes + len(P)
+        for T in self.TrajsResults :
+                PreviousRes = PreviousRes + len(T)
+
+        NormalTrajectories = list()
         for i in TrajectoriesDeclined :
-            NormalTrajectoriesTemp.append(self.ReturnRealTraj(self.TrajsResults[i]))
+            NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
         
         #----------------------------------------------------
-
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
         for i in range(len(DecreaseOfPointersToPathlets)) :
@@ -374,7 +376,7 @@ class PathletLearningScalableClass :
             else :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
 
-        
+
         TrajectoriesDeclined = list(TrajectoriesDeclined)
 
         TrajsResultsTemp = copy.deepcopy(self.TrajsResults)
@@ -387,17 +389,14 @@ class PathletLearningScalableClass :
                 TrajsResultsTemp[i][j] = DecreaseOfPointersToPathlets[TrajsResultsTemp[i][j]]
 
         #-----------------------------------------------------
-
         PathletsTemp = copy.deepcopy(self.Pathlets)
         PathletsTemp = np.array(PathletsTemp)
 
         PathletsTemp = np.delete(PathletsTemp, PathletsDeclined,0)
 
-        PathletsTemp.tolist()
-        TrajsResultsTemp.tolist()
 
-        PathletsTemp = list(PathletsTemp)
-        TrajsResultsTemp = list(TrajsResultsTemp)
+        PathletsTemp = [l.tolist() for l in PathletsTemp]
+        TrajsResultsTemp = [l.tolist() for l in TrajsResultsTemp]
 
         CurrentRes = 0
         for P in PathletsTemp :
@@ -405,7 +404,7 @@ class PathletLearningScalableClass :
         
         for T in TrajsResultsTemp :
                 CurrentRes = CurrentRes + len(T)
-        for T in NormalTrajectoriesTemp :
+        for T in NormalTrajectories :
                 CurrentRes = CurrentRes + len(T)
 
         if CurrentRes < PreviousRes :
@@ -421,5 +420,5 @@ class PathletLearningScalableClass :
         if implement == 'yes' :
             self.TrajsResults = TrajsResultsTemp
             self.Pathlets = PathletsTemp
-            self.NormalTrajectories = NormalTrajectoriesTemp
+            self.NormalTrajectories = NormalTrajectories
         

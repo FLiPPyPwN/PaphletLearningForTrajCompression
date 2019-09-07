@@ -412,15 +412,7 @@ class PathletLearningScalableDynamicClass :
 
 
 
-
-    def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :
-        PreviousRes = 0 #Check if Optimization worth it
-        for P in self.Pathlets :
-                PreviousRes = PreviousRes + len(P)
-        for T in self.TrajsResults :
-                PreviousRes = PreviousRes + len(T)
-                
-
+    def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :     
         (x,y) = BestDifResult
 
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
@@ -466,13 +458,23 @@ class PathletLearningScalableDynamicClass :
 
         PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
 
+        self.FindAndAskForPercentageOptimization(PathletsDeclined,TrajectoriesDeclined)
+
+        
+
+    def FindAndAskForPercentageOptimization(self,PathletsDeclined,TrajectoriesDeclined) :
+        PreviousRes = 0 #Check if Optimization worth it
+        for P in self.Pathlets :
+                PreviousRes = PreviousRes + len(P)
+        for T in self.TrajsResults :
+                PreviousRes = PreviousRes + len(T)
+
         NormalTrajectories = list()
         for i in TrajectoriesDeclined :
             NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
         
         #----------------------------------------------------
-
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
         for i in range(len(DecreaseOfPointersToPathlets)) :
@@ -482,7 +484,6 @@ class PathletLearningScalableDynamicClass :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
 
 
-        
         TrajectoriesDeclined = list(TrajectoriesDeclined)
 
         TrajsResultsTemp = copy.deepcopy(self.TrajsResults)
@@ -495,15 +496,13 @@ class PathletLearningScalableDynamicClass :
                 TrajsResultsTemp[i][j] = DecreaseOfPointersToPathlets[TrajsResultsTemp[i][j]]
 
         #-----------------------------------------------------
-
         PathletsTemp = copy.deepcopy(self.Pathlets)
         PathletsTemp = np.array(PathletsTemp)
 
         PathletsTemp = np.delete(PathletsTemp, PathletsDeclined,0)
 
-        PathletsTemp.tolist()
-        TrajsResultsTemp.tolist()
 
+        PathletsTemp.tolist()
         PathletsTemp = list(PathletsTemp)
         TrajsResultsTemp = list(TrajsResultsTemp)
 

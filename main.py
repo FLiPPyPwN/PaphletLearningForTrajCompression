@@ -37,8 +37,8 @@ def main() :
         #seed for random
         random.seed(1234)
 
-        for i in range(10000) :
-                trajectory = random.sample(range(1, 10), 5)
+        for i in range(50) :
+                trajectory = random.sample(range(1, 7), 5)
                 trajectory.sort()
                 trajectories.append(trajectory)
 
