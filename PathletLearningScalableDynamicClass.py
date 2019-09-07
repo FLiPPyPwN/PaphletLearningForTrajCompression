@@ -504,6 +504,7 @@ class PathletLearningScalableDynamicClass :
 
         PathletsTemp.tolist()
         PathletsTemp = list(PathletsTemp)
+        TrajsResultsTemp.tolist()
         TrajsResultsTemp = list(TrajsResultsTemp)
 
         CurrentRes = 0

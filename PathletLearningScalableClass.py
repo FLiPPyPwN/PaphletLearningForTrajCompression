@@ -3,6 +3,7 @@ import gc
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+from itertools import permutations
 
 class PathletLearningScalableClass :
     def __init__(self, trajectories = [], l = -1) :
@@ -103,7 +104,7 @@ class PathletLearningScalableClass :
         for i in range(len(trajectories)) :
             self.TrajsResults.append(self.SolvePathletLearningScalableLinearly(i,TpIndexesNeededForPathletLearning,SubIndexesNeededForPathletLearning))
 
-        self.MinimizePathletLearningResults(self.Xp)
+        self.MinimizePathletLearningResults(self.Xp,trajectories)
         
 
 
@@ -179,7 +180,7 @@ class PathletLearningScalableClass :
 
         return trajResults
 
-    def MinimizePathletLearningResults(self,PathletResults) :
+    def MinimizePathletLearningResults(self,PathletResults,trajectories) :
         #----------------------------------------------
         #Parakatw meiwnw to megethos twn dedomenwn mas
         indexes = []
@@ -199,10 +200,19 @@ class PathletLearningScalableClass :
 
 
         NewTrajsResults = []
-        for traj in self.TrajsResults :
-            NewTraj = np.where(traj == 1)[0]
+        for i in range(len(self.TrajsResults)) :
+            NewTraj = np.where(self.TrajsResults[i] == 1)[0]
 
-            NewTrajsResults.append(NewTraj.tolist())
+            #Swsth topothethsh twn index sta Pathlets
+            if not(self.ReturnRealTraj(NewTraj) == trajectories[i]) :
+                for PossibleOrder in list(permutations(NewTraj, len(NewTraj))) :
+                    if self.ReturnRealTraj(PossibleOrder) == trajectories[i] :
+                        NewTraj = PossibleOrder
+                        break
+
+                NewTrajsResults.append(list(NewTraj))
+            else :
+                NewTrajsResults.append(NewTraj.tolist())
 
 
         self.TrajsResults = NewTrajsResults
@@ -214,7 +224,7 @@ class PathletLearningScalableClass :
 
             RealTraj = RealTraj + list(self.Pathlets[index])
 
-        return sorted(RealTraj)
+        return RealTraj
 
     def ReturnAllTrajectoriesInAList(self) :
         RealTrajs = []
@@ -395,8 +405,10 @@ class PathletLearningScalableClass :
         PathletsTemp = np.delete(PathletsTemp, PathletsDeclined,0)
 
 
-        PathletsTemp = [l.tolist() for l in PathletsTemp]
-        TrajsResultsTemp = [l.tolist() for l in TrajsResultsTemp]
+        PathletsTemp.tolist()
+        PathletsTemp = list(PathletsTemp)
+        TrajsResultsTemp.tolist()
+        TrajsResultsTemp = list(TrajsResultsTemp)
 
         CurrentRes = 0
         for P in PathletsTemp :
