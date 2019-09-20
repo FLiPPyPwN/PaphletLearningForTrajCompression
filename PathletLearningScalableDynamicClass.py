@@ -35,6 +35,7 @@ class PathletLearningScalableDynamicClass :
 
         if l == - 1 :
             while self.lamda < 100000:
+                print("Checking for lamda:",self.lamda)
                 self.MainFunction(trajectories)
 
                 #Save Results according to lamda
@@ -112,10 +113,8 @@ class PathletLearningScalableDynamicClass :
 
         self.TpCounterNeededForPathletLearning = m.dict()
         p.map(self.FindTpCounterOfPathlets,list(trajectories[i:i+int(len(trajectories)/cpu_count)] for i in range(0,len(trajectories),int(len(trajectories)/cpu_count))))
-
+        
         self.TpCounterNeededForPathletLearning = dict(self.TpCounterNeededForPathletLearning)
-
-        print("FoundTpCounters for lamda =",self.lamda)
 
         gc.collect()
 

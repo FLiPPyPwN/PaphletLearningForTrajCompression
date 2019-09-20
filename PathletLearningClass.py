@@ -33,6 +33,7 @@ class PathletLearningClass :
 
         if l == - 1 :
             while self.lamda < 100000:
+                print("Checking for lamda:",self.lamda)
                 self.MainFunction(trajectories)
 
                 #Save Results according to lamda
