@@ -56,6 +56,7 @@ class PathletLearningScalableClass :
 
                 if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
                     self.BestResult = (self.Pathlets,self.TrajsResults)
+                    self.BestResultCounter = PathletCounter + TrajsResultsCounter
             
                 self.TrajsResults = list()
                 self.Pathlets = list()
@@ -92,7 +93,7 @@ class PathletLearningScalableClass :
             gc.collect()
 
         print(Results)
-        print(self.Pathlets,self.TrajsResults)
+        print(len(self.Pathlets),len(self.TrajsResults))
 
         
     def MainFunction(self, trajectories) :

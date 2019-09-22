@@ -56,6 +56,7 @@ class PathletLearningScalableDynamicClass :
 
                 if PathletCounter + TrajsResultsCounter < self.BestResultCounter :
                     self.BestResult = (self.Pathlets,self.TrajsResults)
+                    self.BestResultCounter = PathletCounter + TrajsResultsCounter
             
                 self.TrajsResults = list()
                 self.Pathlets = list()
