@@ -11,8 +11,8 @@ from collections import Counter
 
 def main() :
 
-        """
-        num_of_trajectories = 100
+        
+        num_of_trajectories =1000
         trainSet = pd.read_csv(
                 'newTrips.csv', # replace with the correct path
                 converters={"barefootSegmentsSequence": literal_eval},
@@ -27,13 +27,20 @@ def main() :
                 x = x + 1
                 if x == num_of_trajectories :
                         break
-        
-        
-        print(len(trajectories))
+
+        trajectories = trajectories + trajectories
+
+        random.seed(1234)
+
+        for i in range(3000) :
+                trajectory = random.sample(range(0, 3000), random.randint(3,9))
+                
+                trajectories.append(trajectory)
+
         del trainSet
         gc.collect()
-        """
         
+        """
         trajectories = []
 
         #seed for random
@@ -45,18 +52,18 @@ def main() :
                 trajectories.append(sorted(trajectory))
         
         print(trajectories)
-        
+        """
 
         RealTrajListCounter = 0
         for T in trajectories :
                 RealTrajListCounter = RealTrajListCounter + len(T)
-
+        
 
 
         start = time.time() #Den prosthetw sto RunTime thn wra p thelei na diavasei to csv file
         
         print("Starting PathletLearning")
-        plclass = PathletLearningScalableClass(trajectories,0.1)
+        plclass = PathletLearningScalableDynamicClass(trajectories,1)
         print("Done PathletLearning")
         end = time.time()
         print("\nRunTime:",(end - start))
@@ -86,7 +93,6 @@ def main() :
         print(PathlCounter)
         print(TrajsCounter)
         print(RealTrajListCounter)
-
 
 
         AllTrajs = plclass.ReturnAllTrajectoriesInAList()

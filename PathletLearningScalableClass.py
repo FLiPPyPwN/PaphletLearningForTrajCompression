@@ -12,9 +12,9 @@ class PathletLearningScalableClass :
             self.Pathlets = []
             return
             
-        RealTrajListCounter = 0
+        self.RealTrajListCounter = 0
         for T in trajectories :
-                RealTrajListCounter = RealTrajListCounter + len(T)
+                self.RealTrajListCounter = self.RealTrajListCounter + len(T)
 
 
         #if optimized with percentage of use
@@ -30,7 +30,7 @@ class PathletLearningScalableClass :
 
         Results = dict()
         
-        self.BestResultCounter = RealTrajListCounter
+        self.BestResultCounter = self.RealTrajListCounter
         self.BestResult = ()
 
         if l == - 1 :
@@ -48,7 +48,7 @@ class PathletLearningScalableClass :
                 for T in self.TrajsResults :
                     TrajsResultsCounter = TrajsResultsCounter + len(T)
 
-                if PathletCounter == RealTrajListCounter :
+                if PathletCounter == self.RealTrajListCounter :
                     break
 
                 Results[self.lamda] = [PathletCounter,TrajsResultsCounter]
@@ -92,8 +92,6 @@ class PathletLearningScalableClass :
             self.TrajsResults = list()
             gc.collect()
 
-        print(Results)
-        print(len(self.Pathlets),len(self.TrajsResults))
 
         
     def MainFunction(self, trajectories) :
@@ -249,63 +247,92 @@ class PathletLearningScalableClass :
             print("There are no Pathlets!")
             return
 
+        PathletCounter = 0
+        TrajsResultsCounter = 0
+
+        for P in self.Pathlets :
+            PathletCounter = PathletCounter + len(P)
+
+        for T in self.TrajsResults :
+            TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
 
+        PathletsSizeUsed = [0]*len(self.Pathlets)
         TimesPathletsUsed = [0]*len(self.Pathlets)
         for trajIndex in range(len(self.TrajsResults)) :
             for PathletIndex in self.TrajsResults[trajIndex] :
-                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + len(self.TrajsResults[trajIndex])
+                PathletsSizeUsed[PathletIndex] = len(self.Pathlets[PathletIndex])
 
                 TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
 
-        for i in range(len(TimesPathletsUsed)) :
-            TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
-
-
         #calculate percentage of reconstructable trajectories by deleting methodically from pathlets
         TrajectoriesDeclined = set()
-        CalculatedResult = [(100,100)]
+        CalculatedResult = [(100,100,0)]
+
+        PathletsRemovedSizeCounter = 0
 
         PathletsRemovedCounter = 1
         while TimesPathletsUsed :
             minIndex = TimesPathletsUsed.index(min(TimesPathletsUsed))
 
+            PathletsRemovedSizeCounter = PathletsRemovedSizeCounter + PathletsSizeUsed[minIndex]
+
             TrajectoriesDeclined.update(TrajectoriesThatUsePathlet[minIndex])
 
             del TrajectoriesThatUsePathlet[minIndex]
             del TimesPathletsUsed[minIndex]
+            del PathletsSizeUsed[minIndex]
 
-            if ((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets)) == 0 or ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults)) == 0 :
+
+            TrajsDeclinedCounter = 0
+            for index in TrajectoriesDeclined :
+                TrajsDeclinedCounter = TrajsDeclinedCounter + len(self.TrajsResults[index])
+
+            TrajsRemovedSizeCounter = 0
+            for index in TrajectoriesDeclined :
+                for Pindex in self.TrajsResults[index] :
+                    TrajsRemovedSizeCounter = TrajsRemovedSizeCounter + len(self.Pathlets[Pindex])
+
+            if ((PathletCounter - PathletsRemovedSizeCounter)/PathletCounter) == 0 or ((TrajsResultsCounter - TrajsDeclinedCounter)/TrajsResultsCounter) == 0 :
                 break
 
-            CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
+            CalculatedResult.append((((PathletCounter - PathletsRemovedSizeCounter)/PathletCounter)*100, ((TrajsResultsCounter - TrajsDeclinedCounter)/TrajsResultsCounter)*100,TrajsRemovedSizeCounter))
 
             PathletsRemovedCounter = PathletsRemovedCounter + 1
+
+        CalculatedResult.append((0,0,self.RealTrajListCounter))
 
 
         xaxis = list()
         yaxis = list()
+        zaxis = list()
 
-        for (x,y) in CalculatedResult :
+        for (x,y,z) in CalculatedResult :
             xaxis.append(x)
             yaxis.append(y)
+            zaxis.append(z)
 
-        BestDifference = 0
+        BestDifference = self.RealTrajListCounter
         BestDifResult = ()
         for index in range(len(xaxis)) :
-            if yaxis[index] - xaxis[index] > BestDifference or not BestDifResult:
-                BestDifference = yaxis[index] - xaxis[index]
+            if yaxis[index]/100*TrajsResultsCounter + xaxis[index]/100*PathletCounter + zaxis[index] < BestDifference or not BestDifResult:
+                BestDifference = yaxis[index]/100*TrajsResultsCounter + xaxis[index]/100*PathletCounter + zaxis[index]
                 BestDifResult = (xaxis[index],yaxis[index])
 
 
         (x,y) = BestDifResult
 
-        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")", xy=BestDifResult, xytext=(5, 95),
+        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")\nCurrentSize="+str(BestDifference), xy=BestDifResult, xytext=(5, 90),
             arrowprops=dict(facecolor='black', shrink=0.05))
 
-        plt.title('PercentageOfReconstrutedTrajectoriesByPathlets')
+        plt.suptitle('PercentageOfReconstrutedTrajectoriesByPathletsInCompressionSize')
+        plt.title('PreviousSize='+str(PathletCounter+TrajsResultsCounter),fontsize=9)
         plt.xlabel('Percentage of Dictionary in Use')
         plt.ylabel('Percentage of Reconstructable Trajectories')
+
 
         plt.plot(xaxis, yaxis,'--bo')
         plt.axis([0, 100, 0, 100])
@@ -316,21 +343,29 @@ class PathletLearningScalableClass :
 
 
 
-
     def OptimizeAccordingToResultPercentageOfPathletsAndTrajectories(self,BestDifResult) :     
         (x,y) = BestDifResult
 
+        PathletCounter = 0
+        TrajsResultsCounter = 0
+
+        for P in self.Pathlets :
+            PathletCounter = PathletCounter + len(P)
+
+        for T in self.TrajsResults :
+            TrajsResultsCounter = TrajsResultsCounter + len(T)
+
+
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
 
+        PathletsSizeUsed = [0]*len(self.Pathlets)
         TimesPathletsUsed = [0]*len(self.Pathlets)
         for trajIndex in range(len(self.TrajsResults)) :
             for PathletIndex in self.TrajsResults[trajIndex] :
-                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + len(self.TrajsResults[trajIndex])
+                PathletsSizeUsed[PathletIndex] = len(self.Pathlets[PathletIndex])
 
                 TrajectoriesThatUsePathlet[PathletIndex].append(trajIndex)
-
-        for i in range(len(TimesPathletsUsed)) :
-            TimesPathletsUsed[i] = TimesPathletsUsed[i] * len(self.Pathlets[i])
 
 
         #Xrhsh gia euresh twn pathlets p tha petaksoume
@@ -343,9 +378,15 @@ class PathletLearningScalableClass :
 
         CalculatedResult = [(100,100)]
 
+        PathletsRemovedSizeCounter = 0
+
         PathletsRemovedCounter = 0
         while TimesPathletsUsed :
-            if ((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100 == x and ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100 == y :
+            TrajsDeclinedCounter = 0
+            for index in TrajectoriesDeclined :
+                TrajsDeclinedCounter = TrajsDeclinedCounter + len(self.TrajsResults[index])
+
+            if ((PathletCounter - PathletsRemovedSizeCounter)/PathletCounter)*100 == x or ((TrajsResultsCounter - TrajsDeclinedCounter)/TrajsResultsCounter)*100 == y :
                 break
 
             PathletsRemovedCounter = PathletsRemovedCounter + 1
@@ -353,13 +394,16 @@ class PathletLearningScalableClass :
             minIndex = TimesPathletsUsed.index(min(TimesPathletsUsed))
 
             TrajectoriesDeclined.update(TrajectoriesThatUsePathlet[minIndex])
+            
+            PathletsRemovedSizeCounter = PathletsRemovedSizeCounter + PathletsSizeUsed[minIndex]
             PathletsDeclined.append(minIndex)
 
             del TrajectoriesThatUsePathlet[minIndex]
             del TimesPathletsUsed[minIndex]
+            del PathletsSizeUsed[minIndex]
 
             
-            CalculatedResult.append((((len(self.Pathlets) - PathletsRemovedCounter)/len(self.Pathlets))*100, ((len(self.TrajsResults) - len(TrajectoriesDeclined))/len(self.TrajsResults))*100))
+            CalculatedResult.append((((PathletCounter - PathletsRemovedSizeCounter)/PathletCounter)*100, ((TrajsResultsCounter - TrajsDeclinedCounter)/TrajsResultsCounter)*100))
 
         PathletsDeclined = PathletsDeclinedTemp[0:PathletsRemovedCounter]
 
