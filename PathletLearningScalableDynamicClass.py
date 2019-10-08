@@ -93,7 +93,7 @@ class PathletLearningScalableDynamicClass :
             self.TrajsResults = list()
             gc.collect()
 
-
+        
 
 
     def MainFunction(self, trajectories) :
@@ -161,7 +161,6 @@ class PathletLearningScalableDynamicClass :
     def FindTpCounterOfPathlets(self, trajectories) :
         for traj in trajectories :
             for i in range(len(traj) + 1): 
-
                 for j in range(i + 1, i + 3): 
 
                     sub = tuple(traj[i:j])
@@ -280,7 +279,6 @@ class PathletLearningScalableDynamicClass :
                 if counter == 1 :
                     flag = False
 
-
             left = BacktrackingToFindBestDecomposition(left)
             right = BacktrackingToFindBestDecomposition(right)
             
@@ -340,20 +338,53 @@ class PathletLearningScalableDynamicClass :
         else :
             return self.ReturnRealTraj(self.TrajsResults[index])
 
-    def TimesPathletsUsed(self,flag) :
+
+    def TopxPathletsTimeUsed(self,x) :
+        if not self.Pathlets :
+            print("There are no Pathlets!")
+            return
+
+        TimesPathletsUsed = [0]*len(self.Pathlets)
+        for trajIndex in range(len(self.TrajsResults)) :
+            for PathletIndex in self.TrajsResults[trajIndex] :
+                TimesPathletsUsed[PathletIndex] = TimesPathletsUsed[PathletIndex] + 1
+
+        PathletsTemp = copy.deepcopy(self.Pathlets)
+
+        Result = dict()
+
+        while TimesPathletsUsed :
+            maxIndex = TimesPathletsUsed.index(max(TimesPathletsUsed))
+
+            #-----------------
+            if len(Result) < x :
+                Result[PathletsTemp[maxIndex]] = max(TimesPathletsUsed)
+            else :
+                break
+            #-----------------
+
+
+            del TimesPathletsUsed[maxIndex]
+            del PathletsTemp[maxIndex]
+
+        print(Result)
+        return Result
+
+
+
+
+    def PercentageOrderOptimizer(self,flag) :
         if not self.Pathlets :
             print("There are no Pathlets!")
             return
 
         PathletCounter = 0
         TrajsResultsCounter = 0
-
         for P in self.Pathlets :
             PathletCounter = PathletCounter + len(P)
 
         for T in self.TrajsResults :
             TrajsResultsCounter = TrajsResultsCounter + len(T)
-
 
         TrajectoriesThatUsePathlet = [[] for _ in range(len(self.Pathlets))]
 
@@ -383,7 +414,6 @@ class PathletLearningScalableDynamicClass :
             del TrajectoriesThatUsePathlet[minIndex]
             del TimesPathletsUsed[minIndex]
             del PathletsSizeUsed[minIndex]
-
 
             TrajsDeclinedCounter = 0
             for index in TrajectoriesDeclined :
@@ -423,11 +453,11 @@ class PathletLearningScalableDynamicClass :
 
         (x,y) = BestDifResult
 
-        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")\nCurrentSize="+str(BestDifference), xy=BestDifResult, xytext=(5, 90),
+        plt.annotate('BestResult: ('+str(round(x,3))+","+str(round(y,3))+")\nCurrentSize="+str(int(BestDifference)), xy=BestDifResult, xytext=(70, 10),
             arrowprops=dict(facecolor='black', shrink=0.05))
 
-        plt.suptitle('PercentageOfReconstrutedTrajectoriesByPathletsInCompressionSize')
-        plt.title('PreviousSize='+str(int(PathletCounter+TrajsResultsCounter)),fontsize=9)
+        plt.suptitle('PercentageOfReconstrutedTrajectoriesByPathletsInNumberOfEdges')
+        plt.title('PreviousSize='+str(PathletCounter+TrajsResultsCounter),fontsize=9)
         plt.xlabel('Percentage of Dictionary in Use(Number of Edges='+str(PathletCounter)+")")
         plt.ylabel('Percentage of Reconstructable Trajectories(Number of Edges='+str(TrajsResultsCounter)+")")
 
@@ -519,7 +549,6 @@ class PathletLearningScalableDynamicClass :
         for i in TrajectoriesDeclined :
             NormalTrajectories.append(self.ReturnRealTraj(self.TrajsResults[i]))
 
-        
         #----------------------------------------------------
         DecreaseOfPointersToPathlets = [0]*len(self.Pathlets)
         DecreaseCounter = 0
@@ -528,7 +557,6 @@ class PathletLearningScalableDynamicClass :
                 DecreaseCounter = DecreaseCounter + 1
             else :
                 DecreaseOfPointersToPathlets[i] = i - DecreaseCounter
-
 
         TrajectoriesDeclined = list(TrajectoriesDeclined)
 
@@ -546,7 +574,6 @@ class PathletLearningScalableDynamicClass :
         PathletsTemp = np.array(PathletsTemp)
 
         PathletsTemp = np.delete(PathletsTemp, PathletsDeclined,0)
-
 
         PathletsTemp.tolist()
         PathletsTemp = list(PathletsTemp)

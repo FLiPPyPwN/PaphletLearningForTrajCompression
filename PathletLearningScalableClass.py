@@ -164,7 +164,6 @@ class PathletLearningScalableClass :
         temp = lpSum((self.lamda + 1/TpIndexesNeededForPathletLearning[i])*Xtp[i]  for i in PathletsUsing)
 
         problem += temp
-
         problem.solve() #!!!
 
         trajResults = []

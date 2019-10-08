@@ -174,15 +174,9 @@ class PathletLearningClass :
 
 
         print("2nd Set Of Constraints")
-
-
         for i in range(len(trajectories)) :
 
             for j in range(len(trajectories[i])) :
-                #indexes = []
-                #indexes = self.ExistsIndexesInPathlets(trajectories[i],j)
-                #print(len(indexes))
-
                 temp = lpSum(Xtp[i][k] for k in IndexesForConstraints[i][j])
 
                 problem += temp == 1
@@ -195,15 +189,12 @@ class PathletLearningClass :
         temp += lpSum(self.lamda*Xtp[i][j] for j in range(len(Xtp[i])) for i in range(len(Xtp)))
 
         problem += temp
-
         print("SolvingStarts!")
-
         problem.solve() #!!!
 
         PathletResults = []
         for i in range(len(self.Pathlets)) :
             PathletResults.append(Xp[i].varValue)
-
 
         TrajsResults = []
         for i in range(len(trajectories)) :
@@ -212,7 +203,6 @@ class PathletLearningClass :
                 trajResult.append(Xtp[i][j].varValue)
             TrajsResults.append(trajResult)
 
-        
         return PathletResults,TrajsResults
 
     def MinimizePathletLearningResults(self,PathletResults,trajectories) :
@@ -223,7 +213,6 @@ class PathletLearningClass :
             if PathletResults[i] == 0 :
                 indexes.append(i)
 
-
         self.Pathlets = np.array(self.Pathlets)
         PathletResults = np.array(PathletResults)
         self.TrajsResults = np.array(self.TrajsResults)
@@ -231,7 +220,6 @@ class PathletLearningClass :
         self.Pathlets = list(np.delete(self.Pathlets, indexes))
         PathletResults = np.delete(PathletResults, indexes)
         self.TrajsResults = np.delete(self.TrajsResults, indexes, 1)
-
 
         NewTrajsResults = []
         for i in range(len(self.TrajsResults)) :
@@ -243,11 +231,9 @@ class PathletLearningClass :
                     if self.ReturnRealTraj(PossibleOrder) == trajectories[i] :
                         NewTraj = PossibleOrder
                         break
-
                 NewTrajsResults.append(list(NewTraj))
             else :
                 NewTrajsResults.append(NewTraj.tolist())
-                
                 
         self.TrajsResults = NewTrajsResults
 

@@ -12,7 +12,7 @@ from collections import Counter
 def main() :
 
         
-        num_of_trajectories =1000
+        num_of_trajectories =400
         trainSet = pd.read_csv(
                 'newTrips.csv', # replace with the correct path
                 converters={"barefootSegmentsSequence": literal_eval},
@@ -28,8 +28,8 @@ def main() :
                 if x == num_of_trajectories :
                         break
 
-        trajectories = trajectories + trajectories
 
+        """
         random.seed(1234)
 
         for i in range(3000) :
@@ -37,6 +37,7 @@ def main() :
                 
                 trajectories.append(trajectory)
 
+        """
         del trainSet
         gc.collect()
         
@@ -71,12 +72,16 @@ def main() :
         start = time.time()
         PercentageOptimizer = True
         print("Starting UsagePercentageOptimization")
-        plclass.TimesPathletsUsed(PercentageOptimizer)
+        plclass.PercentageOrderOptimizer(PercentageOptimizer)
 
         end = time.time()
         print("\nRunTime:",(end - start))
 
         print("\n\n\n\n")
+
+        plclass.TopxPathletsTimeUsed(100)
+
+        print(len(plclass.Pathlets),len(plclass.TrajsResults))
 
         PathlCounter = 0
         for P in plclass.Pathlets :
